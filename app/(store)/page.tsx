@@ -93,7 +93,7 @@ export default async function StorePage({ searchParams }: PageProps) {
 
           <div className="flex items-center gap-2 shrink-0">
             <LocaleToggle current={locale} />
-            <Link href="/login" className="text-xs text-muted-foreground hover:text-foreground transition-colors hidden sm:block">{t.staffLogin}</Link>
+            <Link href="/login" className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap">{t.staffLogin}</Link>
           </div>
         </div>
       </header>
