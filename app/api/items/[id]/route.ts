@@ -2,6 +2,7 @@ import { connectDB } from "@/lib/db"
 import { Item } from "@/models/Item"
 import { requireApiAdmin, requireApiSession } from "@/lib/dal"
 import { uploadImage, deleteImage } from "@/lib/cloudinary"
+import { generateBarcodeImage } from "@/lib/barcode"
 
 export async function GET(_req: Request, ctx: RouteContext<"/api/items/[id]">) {
   const { error } = await requireApiSession()
@@ -48,6 +49,20 @@ export async function PATCH(req: Request, ctx: RouteContext<"/api/items/[id]">) 
       const val = formData.get(f)
       if (val !== null) updates[f] = ["price", "costPrice", "stockQty", "lowStockThreshold"].includes(f) ? Number(val) : val
     }
+
+    // Regenerate barcode image if barcode code changed
+    const newBarcode = formData.get("barcode") as string | null
+    if (newBarcode && newBarcode !== existing.barcode) {
+      if (existing.barcodeImagePublicId) await deleteImage(existing.barcodeImagePublicId)
+      const { url: barcodeImageUrl, publicId: barcodeImagePublicId } = await generateBarcodeImage(newBarcode)
+      updates.barcodeImageUrl = barcodeImageUrl
+      updates.barcodeImagePublicId = barcodeImagePublicId
+    } else if (!existing.barcodeImageUrl && existing.barcode) {
+      // Backfill barcode image for items created before this feature
+      const { url: barcodeImageUrl, publicId: barcodeImagePublicId } = await generateBarcodeImage(existing.barcode)
+      updates.barcodeImageUrl = barcodeImageUrl
+      updates.barcodeImagePublicId = barcodeImagePublicId
+    }
   } else {
     updates = await req.json()
   }
@@ -66,6 +81,9 @@ export async function DELETE(_req: Request, ctx: RouteContext<"/api/items/[id]">
   await connectDB()
   const item = await Item.findByIdAndDelete(id)
   if (!item) return Response.json({ error: "Not found" }, { status: 404 })
-  if (item.imagePublicId) await deleteImage(item.imagePublicId)
+  await Promise.all([
+    item.imagePublicId ? deleteImage(item.imagePublicId) : Promise.resolve(),
+    item.barcodeImagePublicId ? deleteImage(item.barcodeImagePublicId) : Promise.resolve(),
+  ])
   return Response.json({ ok: true })
 }

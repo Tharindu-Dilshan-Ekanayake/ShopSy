@@ -10,6 +10,8 @@ export interface IItem extends Document {
   barcode: string
   imageUrl?: string
   imagePublicId?: string
+  barcodeImageUrl?: string
+  barcodeImagePublicId?: string
   status: "active" | "discontinued"
   createdAt: Date
 }
@@ -28,6 +30,8 @@ const ItemSchema = new Schema<IItem>(
     barcode: { type: String, required: true, unique: true, trim: true },
     imageUrl: { type: String },
     imagePublicId: { type: String },
+    barcodeImageUrl: { type: String },
+    barcodeImagePublicId: { type: String },
     status: { type: String, enum: ["active", "discontinued"], default: "active" },
   },
   { timestamps: { createdAt: true, updatedAt: false } }

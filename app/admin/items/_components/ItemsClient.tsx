@@ -11,11 +11,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Plus, Pencil, Trash2, Search, RefreshCw, ImageOff } from "lucide-react"
+import { Plus, Pencil, Trash2, Search, RefreshCw, ImageOff, Printer } from "lucide-react"
 import { toast } from "sonner"
+import BarcodePrintDialog from "./BarcodePrintDialog"
 
 interface Category { _id: string; name: { en: string } }
-interface Item { _id: string; name: { en: string; si: string }; category: Category | null; price: number; costPrice: number; stockQty: number; lowStockThreshold: number; barcode: string; imageUrl?: string; status: string; createdAt: string }
+interface Item { _id: string; name: { en: string; si: string }; category: Category | null; price: number; costPrice: number; stockQty: number; lowStockThreshold: number; barcode: string; imageUrl?: string; barcodeImageUrl?: string; status: string; createdAt: string }
 
 const emptyForm = () => ({ nameEn: "", nameSi: "", category: "", price: "", costPrice: "", stockQty: "0", lowStockThreshold: "5", barcode: "", status: "active", image: null as File | null })
 
@@ -33,6 +34,7 @@ export default function ItemsClient() {
   const [form, setForm] = useState(emptyForm())
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  const [printItem, setPrintItem] = useState<Item | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
   const load = async (p = page) => {
@@ -162,6 +164,7 @@ export default function ItemsClient() {
 
             {/* Actions */}
             <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <Button variant="secondary" size="icon-sm" title="Print barcode" onClick={() => setPrintItem(item)}><Printer className="size-3.5" /></Button>
               <Button variant="secondary" size="icon-sm" onClick={() => openEdit(item)}><Pencil className="size-3.5" /></Button>
               <Button variant="secondary" size="icon-sm" className="text-destructive" onClick={() => setDeleteId(item._id)}><Trash2 className="size-3.5" /></Button>
             </div>
@@ -195,7 +198,7 @@ export default function ItemsClient() {
                   : <div className="text-center"><ImageOff className="size-8 text-muted-foreground/40 mx-auto mb-1" /><p className="text-xs text-muted-foreground">Click to upload image</p></div>
                 }
               </div>
-              <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
+              <input ref={fileRef} type="file" accept="image/*" aria-label="Upload item image" className="hidden" onChange={handleFile} />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
@@ -275,6 +278,9 @@ export default function ItemsClient() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Barcode print dialog */}
+      <BarcodePrintDialog item={printItem} onClose={() => setPrintItem(null)} />
     </div>
   )
 }

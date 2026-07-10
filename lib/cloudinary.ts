@@ -10,6 +10,10 @@ cloudinary.config({
 
 export async function uploadImage(file: File, folder = "shopsy/items"): Promise<UploadApiResponse> {
   const buffer = Buffer.from(await file.arrayBuffer())
+  return uploadImageBuffer(buffer, folder)
+}
+
+export async function uploadImageBuffer(buffer: Buffer, folder = "shopsy/items"): Promise<UploadApiResponse> {
   return new Promise((resolve, reject) => {
     cloudinary.uploader
       .upload_stream({ folder, resource_type: "image" }, (error, result) => {
