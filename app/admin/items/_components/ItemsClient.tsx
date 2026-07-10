@@ -5,20 +5,36 @@ import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Plus, Pencil, Trash2, Search, RefreshCw, ImageOff, Printer } from "lucide-react"
+import { Plus, Pencil, Trash2, Search, RefreshCw, ImageOff, Printer, ChevronLeft, ChevronRight } from "lucide-react"
 import { toast } from "sonner"
 import BarcodePrintDialog from "./BarcodePrintDialog"
 
 interface Category { _id: string; name: { en: string } }
-interface Item { _id: string; name: { en: string; si: string }; category: Category | null; price: number; costPrice: number; stockQty: number; lowStockThreshold: number; barcode: string; imageUrl?: string; barcodeImageUrl?: string; status: string; createdAt: string }
+interface Item {
+  _id: string
+  name: { en: string; si: string }
+  category: Category | null
+  price: number
+  costPrice: number
+  stockQty: number
+  lowStockThreshold: number
+  barcode: string
+  imageUrl?: string
+  barcodeImageUrl?: string
+  status: string
+  createdAt: string
+}
 
-const emptyForm = () => ({ nameEn: "", nameSi: "", category: "", price: "", costPrice: "", stockQty: "0", lowStockThreshold: "5", barcode: "", status: "active", image: null as File | null })
+const emptyForm = () => ({
+  nameEn: "", nameSi: "", category: "", price: "", costPrice: "",
+  stockQty: "0", lowStockThreshold: "5", barcode: "", status: "active",
+  image: null as File | null,
+})
 
 export default function ItemsClient() {
   const [items, setItems] = useState<Item[]>([])
@@ -26,8 +42,10 @@ export default function ItemsClient() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
   const [catFilter, setCatFilter] = useState("all")
+  const [statusFilter, setStatusFilter] = useState("all")
   const [page, setPage] = useState(1)
   const [pages, setPages] = useState(1)
+  const [total, setTotal] = useState(0)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [editing, setEditing] = useState<Item | null>(null)
@@ -39,11 +57,18 @@ export default function ItemsClient() {
 
   const load = async (p = page) => {
     setLoading(true)
-    const params = new URLSearchParams({ page: String(p), limit: "20", status: "all" })
+    const params = new URLSearchParams({ page: String(p), limit: "20" })
+    if (statusFilter !== "all") params.set("status", statusFilter)
+    else params.set("status", "all")
     if (search) params.set("search", search)
     if (catFilter !== "all") params.set("category", catFilter)
     const res = await fetch(`/api/items?${params}`)
-    if (res.ok) { const d = await res.json(); setItems(d.items); setPages(d.pages) }
+    if (res.ok) {
+      const d = await res.json()
+      setItems(d.items)
+      setPages(d.pages)
+      setTotal(d.total ?? d.items.length)
+    }
     setLoading(false)
   }
 
@@ -51,12 +76,18 @@ export default function ItemsClient() {
     fetch("/api/categories").then((r) => r.json()).then(setCategories)
   }, [])
 
-  useEffect(() => { setPage(1); load(1) }, [search, catFilter])
+  useEffect(() => { setPage(1); load(1) }, [search, catFilter, statusFilter])
 
   const openCreate = () => { setEditing(null); setForm(emptyForm()); setPreviewUrl(null); setDialogOpen(true) }
   const openEdit = (item: Item) => {
     setEditing(item)
-    setForm({ nameEn: item.name.en, nameSi: item.name.si, category: item.category?._id || "", price: String(item.price), costPrice: String(item.costPrice), stockQty: String(item.stockQty), lowStockThreshold: String(item.lowStockThreshold), barcode: item.barcode, status: item.status, image: null })
+    setForm({
+      nameEn: item.name.en, nameSi: item.name.si,
+      category: item.category?._id || "",
+      price: String(item.price), costPrice: String(item.costPrice),
+      stockQty: String(item.stockQty), lowStockThreshold: String(item.lowStockThreshold),
+      barcode: item.barcode, status: item.status, image: null,
+    })
     setPreviewUrl(item.imageUrl || null)
     setDialogOpen(true)
   }
@@ -70,7 +101,9 @@ export default function ItemsClient() {
   const genBarcode = () => setForm((f) => ({ ...f, barcode: `BC${Date.now().toString(36).toUpperCase()}` }))
 
   const save = async () => {
-    if (!form.nameEn || !form.nameSi || !form.category || !form.price || !form.costPrice) { toast.error("Fill all required fields"); return }
+    if (!form.nameEn || !form.nameSi || !form.category || !form.price || !form.costPrice) {
+      toast.error("Fill all required fields"); return
+    }
     setSaving(true)
     const fd = new FormData()
     fd.append("name.en", form.nameEn)
@@ -83,7 +116,6 @@ export default function ItemsClient() {
     fd.append("barcode", form.barcode)
     fd.append("status", form.status)
     if (form.image) fd.append("image", form.image)
-
     const url = editing ? `/api/items/${editing._id}` : "/api/items"
     const method = editing ? "PATCH" : "POST"
     const res = await fetch(url, { method, body: fd })
@@ -100,91 +132,251 @@ export default function ItemsClient() {
     setDeleteId(null)
   }
 
+  const goPage = (p: number) => { setPage(p); load(p) }
+
+  /* ── Stock status helper ── */
+  const stockLabel = (item: Item) => {
+    if (item.stockQty === 0) return { label: "Out", cls: "text-destructive font-bold" }
+    if (item.stockQty <= item.lowStockThreshold) return { label: `${item.stockQty} ⚠`, cls: "text-amber-600 font-semibold" }
+    return { label: String(item.stockQty), cls: "text-foreground" }
+  }
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
+      {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold">Items</h1>
-          <p className="text-sm text-muted-foreground">{items.length} shown</p>
+          <p className="text-sm text-muted-foreground">
+            {loading ? "Loading…" : `${total} total`}
+          </p>
         </div>
-        <Button onClick={openCreate} className="gap-2"><Plus className="size-4" />Add Item</Button>
+        <Button onClick={openCreate} className="gap-2">
+          <Plus className="size-4" /> Add Item
+        </Button>
       </div>
 
       {/* Filters */}
-      <div className="flex gap-3 flex-wrap">
+      <div className="flex gap-2 flex-wrap">
         <div className="relative flex-1 min-w-48">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-          <Input className="pl-9" placeholder="Search items or barcode…" value={search} onChange={(e) => setSearch(e.target.value)} />
+          <Input
+            className="pl-9"
+            placeholder="Search name or barcode…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
         </div>
         <Select value={catFilter} onValueChange={(v) => setCatFilter(v ?? "all")}>
-          <SelectTrigger className="w-44"><SelectValue placeholder="All Categories" /></SelectTrigger>
+          <SelectTrigger className="w-44">
+            <SelectValue placeholder="All Categories" />
+          </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Categories</SelectItem>
-            {categories.map((c) => <SelectItem key={c._id} value={c._id}>{c.name.en}</SelectItem>)}
+            {categories.map((c) => (
+              <SelectItem key={c._id} value={c._id}>{c.name.en}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v ?? "all")}>
+          <SelectTrigger className="w-36">
+            <SelectValue placeholder="All Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Status</SelectItem>
+            <SelectItem value="active">Active</SelectItem>
+            <SelectItem value="discontinued">Discontinued</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
-      {/* Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        {loading && Array.from({ length: 8 }).map((_, i) => (
-          <div key={i} className="rounded-xl border bg-card overflow-hidden">
-            <Skeleton className="aspect-video w-full" />
-            <div className="p-3 space-y-2"><Skeleton className="h-4 w-32" /><Skeleton className="h-3 w-20" /></div>
-          </div>
-        ))}
-        {!loading && items.map((item) => (
-          <div key={item._id} className="rounded-xl border bg-card overflow-hidden group relative">
-            {/* Image */}
-            <div className="aspect-video bg-muted flex items-center justify-center overflow-hidden">
-              {item.imageUrl ? (
-                <Image src={item.imageUrl} alt={item.name.en} width={300} height={169} className="object-cover w-full h-full group-hover:scale-105 transition-transform" />
-              ) : (
-                <ImageOff className="size-8 text-muted-foreground/40" />
+      {/* Table */}
+      <div className="rounded-xl border overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b bg-muted/50">
+                <th className="text-left px-3 py-3 font-semibold text-muted-foreground w-12">Img</th>
+                <th className="text-left px-3 py-3 font-semibold text-muted-foreground min-w-40">Item</th>
+                <th className="text-left px-3 py-3 font-semibold text-muted-foreground min-w-28 hidden md:table-cell">Category</th>
+                <th className="text-right px-3 py-3 font-semibold text-muted-foreground min-w-24">Price</th>
+                <th className="text-right px-3 py-3 font-semibold text-muted-foreground w-16 hidden sm:table-cell">Stock</th>
+                <th className="text-left px-3 py-3 font-semibold text-muted-foreground min-w-28 hidden lg:table-cell">Barcode</th>
+                <th className="text-center px-3 py-3 font-semibold text-muted-foreground w-20">Status</th>
+                <th className="text-right px-3 py-3 font-semibold text-muted-foreground w-28">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {/* Skeleton rows while loading */}
+              {loading && Array.from({ length: 8 }).map((_, i) => (
+                <tr key={i}>
+                  <td className="px-3 py-3"><Skeleton className="size-9 rounded-lg" /></td>
+                  <td className="px-3 py-3"><Skeleton className="h-4 w-32 mb-1" /><Skeleton className="h-3 w-20" /></td>
+                  <td className="px-3 py-3 hidden md:table-cell"><Skeleton className="h-4 w-20" /></td>
+                  <td className="px-3 py-3 text-right"><Skeleton className="h-4 w-16 ml-auto" /></td>
+                  <td className="px-3 py-3 text-right hidden sm:table-cell"><Skeleton className="h-4 w-8 ml-auto" /></td>
+                  <td className="px-3 py-3 hidden lg:table-cell"><Skeleton className="h-4 w-24" /></td>
+                  <td className="px-3 py-3 text-center"><Skeleton className="h-5 w-14 mx-auto rounded-full" /></td>
+                  <td className="px-3 py-3 text-right"><Skeleton className="h-7 w-20 ml-auto rounded-lg" /></td>
+                </tr>
+              ))}
+
+              {/* Empty state */}
+              {!loading && items.length === 0 && (
+                <tr>
+                  <td colSpan={8} className="px-3 py-16 text-center text-muted-foreground">
+                    <ImageOff className="size-10 opacity-20 mx-auto mb-3" />
+                    <p className="font-medium">No items found</p>
+                    {search && <p className="text-xs mt-1">Try a different search</p>}
+                  </td>
+                </tr>
               )}
-            </div>
 
-            {/* Info */}
-            <div className="p-3 space-y-1">
-              <div className="flex items-start justify-between gap-1">
-                <p className="font-medium text-sm leading-tight">{item.name.en}</p>
-                <Badge variant={item.status === "active" ? "outline" : "secondary"} className="text-xs shrink-0">
-                  {item.status === "active" ? "Active" : "Off"}
-                </Badge>
-              </div>
-              <p className="text-xs text-muted-foreground">{item.category?.name.en || "—"}</p>
-              <div className="flex items-center justify-between pt-1">
-                <span className="font-semibold text-sm">Rs. {item.price.toLocaleString()}</span>
-                <span className={`text-xs font-medium ${item.stockQty <= item.lowStockThreshold ? "text-destructive" : "text-muted-foreground"}`}>
-                  Stock: {item.stockQty}
-                </span>
-              </div>
-              <p className="text-xs font-mono text-muted-foreground">{item.barcode}</p>
-            </div>
+              {/* Data rows */}
+              {!loading && items.map((item) => {
+                const stock = stockLabel(item)
+                return (
+                  <tr key={item._id} className="hover:bg-muted/30 transition-colors group">
+                    {/* Thumbnail */}
+                    <td className="px-3 py-2.5">
+                      <div className="size-9 rounded-lg overflow-hidden border bg-muted shrink-0 flex items-center justify-center">
+                        {item.imageUrl
+                          ? <Image src={item.imageUrl} alt={item.name.en} width={36} height={36} className="object-cover w-full h-full" />
+                          : <ImageOff className="size-4 text-muted-foreground/30" />}
+                      </div>
+                    </td>
 
-            {/* Actions */}
-            <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-              <Button variant="secondary" size="icon-sm" title="Print barcode" onClick={() => setPrintItem(item)}><Printer className="size-3.5" /></Button>
-              <Button variant="secondary" size="icon-sm" onClick={() => openEdit(item)}><Pencil className="size-3.5" /></Button>
-              <Button variant="secondary" size="icon-sm" className="text-destructive" onClick={() => setDeleteId(item._id)}><Trash2 className="size-3.5" /></Button>
+                    {/* Name */}
+                    <td className="px-3 py-2.5">
+                      <p className="font-medium leading-tight">{item.name.en}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{item.name.si}</p>
+                    </td>
+
+                    {/* Category */}
+                    <td className="px-3 py-2.5 text-muted-foreground hidden md:table-cell">
+                      {item.category?.name.en || <span className="text-muted-foreground/40">—</span>}
+                    </td>
+
+                    {/* Price */}
+                    <td className="px-3 py-2.5 text-right">
+                      <p className="font-semibold">Rs.{item.price.toLocaleString()}</p>
+                      <p className="text-xs text-muted-foreground">cost Rs.{item.costPrice.toLocaleString()}</p>
+                    </td>
+
+                    {/* Stock */}
+                    <td className={`px-3 py-2.5 text-right hidden sm:table-cell ${stock.cls}`}>
+                      {stock.label}
+                    </td>
+
+                    {/* Barcode */}
+                    <td className="px-3 py-2.5 hidden lg:table-cell">
+                      <span className="font-mono text-xs text-muted-foreground">{item.barcode || "—"}</span>
+                    </td>
+
+                    {/* Status */}
+                    <td className="px-3 py-2.5 text-center">
+                      <Badge
+                        variant={item.status === "active" ? "outline" : "secondary"}
+                        className="text-xs"
+                      >
+                        {item.status === "active" ? "Active" : "Off"}
+                      </Badge>
+                    </td>
+
+                    {/* Actions */}
+                    <td className="px-3 py-2.5">
+                      <div className="flex items-center justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          title="Print barcode label"
+                          onClick={() => setPrintItem(item)}
+                        >
+                          <Printer className="size-3.5" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          title="Edit"
+                          onClick={() => openEdit(item)}
+                        >
+                          <Pencil className="size-3.5" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          title="Delete"
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                          onClick={() => setDeleteId(item._id)}
+                        >
+                          <Trash2 className="size-3.5" />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Pagination — inside the card */}
+        {pages > 1 && (
+          <div className="flex items-center justify-between px-4 py-3 border-t bg-muted/20">
+            <p className="text-sm text-muted-foreground">
+              Page {page} of {pages}
+            </p>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="outline"
+                size="icon-sm"
+                disabled={page <= 1}
+                onClick={() => goPage(page - 1)}
+                aria-label="Previous page"
+              >
+                <ChevronLeft className="size-4" />
+              </Button>
+              {/* Page number chips — show at most 5 */}
+              {Array.from({ length: pages }, (_, i) => i + 1)
+                .filter((p) => p === 1 || p === pages || Math.abs(p - page) <= 1)
+                .reduce<(number | "…")[]>((acc, p, idx, arr) => {
+                  if (idx > 0 && p - (arr[idx - 1] as number) > 1) acc.push("…")
+                  acc.push(p); return acc
+                }, [])
+                .map((p, i) =>
+                  p === "…"
+                    ? <span key={`dot-${i}`} className="px-1 text-muted-foreground text-sm">…</span>
+                    : <button
+                        key={p}
+                        type="button"
+                        onClick={() => goPage(p as number)}
+                        className={`size-8 rounded-lg text-sm font-medium transition-colors ${
+                          p === page ? "bg-primary text-primary-foreground" : "hover:bg-muted"
+                        }`}
+                      >
+                        {p}
+                      </button>
+                )}
+              <Button
+                variant="outline"
+                size="icon-sm"
+                disabled={page >= pages}
+                onClick={() => goPage(page + 1)}
+                aria-label="Next page"
+              >
+                <ChevronRight className="size-4" />
+              </Button>
             </div>
           </div>
-        ))}
+        )}
       </div>
-
-      {/* Pagination */}
-      {pages > 1 && (
-        <div className="flex justify-center gap-2">
-          <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => { setPage(page - 1); load(page - 1) }}>Prev</Button>
-          <span className="text-sm text-muted-foreground py-1 px-3">Page {page} / {pages}</span>
-          <Button variant="outline" size="sm" disabled={page >= pages} onClick={() => { setPage(page + 1); load(page + 1) }}>Next</Button>
-        </div>
-      )}
 
       {/* Create / Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>{editing ? "Edit Item" : "New Item"}</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>{editing ? "Edit Item" : "New Item"}</DialogTitle>
+          </DialogHeader>
           <div className="space-y-4 py-2">
             {/* Image */}
             <div className="space-y-1.5">
@@ -195,8 +387,10 @@ export default function ItemsClient() {
               >
                 {previewUrl
                   ? <Image src={previewUrl} alt="Preview" width={400} height={225} className="object-cover w-full h-full" />
-                  : <div className="text-center"><ImageOff className="size-8 text-muted-foreground/40 mx-auto mb-1" /><p className="text-xs text-muted-foreground">Click to upload image</p></div>
-                }
+                  : <div className="text-center">
+                      <ImageOff className="size-8 text-muted-foreground/40 mx-auto mb-1" />
+                      <p className="text-xs text-muted-foreground">Click to upload image</p>
+                    </div>}
               </div>
               <input ref={fileRef} type="file" accept="image/*" aria-label="Upload item image" className="hidden" onChange={handleFile} />
             </div>
@@ -216,7 +410,9 @@ export default function ItemsClient() {
               <Label>Category *</Label>
               <Select value={form.category} onValueChange={(v) => setForm((f) => ({ ...f, category: v ?? "" }))}>
                 <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
-                <SelectContent>{categories.map((c) => <SelectItem key={c._id} value={c._id}>{c.name.en}</SelectItem>)}</SelectContent>
+                <SelectContent>
+                  {categories.map((c) => <SelectItem key={c._id} value={c._id}>{c.name.en}</SelectItem>)}
+                </SelectContent>
               </Select>
             </div>
 
@@ -242,8 +438,15 @@ export default function ItemsClient() {
             <div className="space-y-1.5">
               <Label>Barcode</Label>
               <div className="flex gap-2">
-                <Input value={form.barcode} onChange={(e) => setForm((f) => ({ ...f, barcode: e.target.value }))} placeholder="Auto-generated if empty" className="font-mono" />
-                <Button type="button" variant="outline" size="sm" onClick={genBarcode} title="Generate"><RefreshCw className="size-4" /></Button>
+                <Input
+                  value={form.barcode}
+                  onChange={(e) => setForm((f) => ({ ...f, barcode: e.target.value }))}
+                  placeholder="Auto-generated if empty"
+                  className="font-mono"
+                />
+                <Button type="button" variant="outline" size="sm" onClick={genBarcode} title="Generate barcode">
+                  <RefreshCw className="size-4" />
+                </Button>
               </div>
             </div>
 
@@ -265,21 +468,28 @@ export default function ItemsClient() {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Alert */}
+      {/* Delete confirmation */}
       <AlertDialog open={!!deleteId} onOpenChange={(o) => !o && setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Item?</AlertDialogTitle>
-            <AlertDialogDescription>The item and its image will be permanently deleted.</AlertDialogDescription>
+            <AlertDialogDescription>
+              The item and its images will be permanently deleted.
+            </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/80">Delete</AlertDialogAction>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/80"
+            >
+              Delete
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Barcode print dialog */}
+      {/* Barcode print */}
       <BarcodePrintDialog item={printItem} onClose={() => setPrintItem(null)} />
     </div>
   )
