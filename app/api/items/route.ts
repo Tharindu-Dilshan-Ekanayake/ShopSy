@@ -2,6 +2,7 @@ import { connectDB } from "@/lib/db"
 import { Item } from "@/models/Item"
 import { requireApiAdmin, requireApiSession } from "@/lib/dal"
 import { uploadImage } from "@/lib/cloudinary"
+import { generateBarcodeImage } from "@/lib/barcode"
 
 export async function GET(req: Request) {
   const { error } = await requireApiSession()
@@ -66,9 +67,12 @@ export async function POST(req: Request) {
     imagePublicId = result.public_id
   }
 
+  // Always generate a barcode image and upload to Cloudinary
+  const { url: barcodeImageUrl, publicId: barcodeImagePublicId } = await generateBarcodeImage(barcode)
+
   await connectDB()
   try {
-    const item = await Item.create({ name, category, price, costPrice, stockQty, lowStockThreshold, barcode, imageUrl, imagePublicId, status })
+    const item = await Item.create({ name, category, price, costPrice, stockQty, lowStockThreshold, barcode, imageUrl, imagePublicId, barcodeImageUrl, barcodeImagePublicId, status })
     return Response.json(item, { status: 201 })
   } catch (e: unknown) {
     if ((e as { code?: number }).code === 11000) return Response.json({ error: "Barcode already exists" }, { status: 409 })

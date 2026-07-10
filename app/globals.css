@@ -130,11 +130,13 @@
   }
 }
 
-/* Print receipt layout — only the receipt div is visible when printing */
+/* Print: only the targeted element is visible */
 @media print {
   body * {
     visibility: hidden;
   }
+
+  /* Bill receipt */
   #receipt, #receipt * {
     visibility: visible;
   }
@@ -148,5 +150,27 @@
     color: black;
     background: white;
     padding: 12px;
+  }
+
+  /* Barcode label */
+  #barcode-label, #barcode-label * {
+    visibility: visible;
+  }
+  #barcode-label {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 60mm;
+    font-family: sans-serif;
+    font-size: 11px;
+    color: black;
+    background: white;
+    padding: 8px;
+    border: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    text-align: center;
   }
 }
