@@ -1,0 +1,43 @@
+{
+  "nav": {
+    "home": "Home",
+    "categories": "Categories",
+    "search": "Search products…",
+    "language": "සිංහල"
+  },
+  "store": {
+    "in_stock": "In Stock",
+    "out_of_stock": "Out of Stock",
+    "low_stock": "Low Stock",
+    "all_categories": "All Categories"
+  },
+  "auth": {
+    "login": "Sign In",
+    "logout": "Sign Out",
+    "email": "Email",
+    "password": "Password",
+    "signing_in": "Signing in…"
+  },
+  "admin": {
+    "dashboard": "Dashboard",
+    "categories": "Categories",
+    "items": "Items",
+    "users": "Users",
+    "sales": "Sales",
+    "notifications": "Notifications"
+  },
+  "counter": {
+    "new_bill": "New Bill",
+    "scan_barcode": "Scan Barcode",
+    "search_item": "Search Item",
+    "cart": "Cart",
+    "checkout": "Checkout",
+    "payment_method": "Payment Method",
+    "cash": "Cash",
+    "card": "Card",
+    "discount": "Discount",
+    "total": "Total",
+    "print_receipt": "Print Receipt",
+    "bill_history": "Bill History"
+  }
+}

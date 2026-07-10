@@ -1,0 +1,43 @@
+{
+  "nav": {
+    "home": "මුල් පිටුව",
+    "categories": "වර්ග",
+    "search": "නිෂ්පාදන සොයන්න…",
+    "language": "English"
+  },
+  "store": {
+    "in_stock": "තොගයේ ඇත",
+    "out_of_stock": "තොගය අවසන්",
+    "low_stock": "අඩු තොගය",
+    "all_categories": "සියලු වර්ග"
+  },
+  "auth": {
+    "login": "පිවිසෙන්න",
+    "logout": "පිටවෙන්න",
+    "email": "විද්‍යුත් තැපෑල",
+    "password": "මුරපදය",
+    "signing_in": "පිවිසෙමින්…"
+  },
+  "admin": {
+    "dashboard": "උපකරණ පුවරුව",
+    "categories": "වර්ග",
+    "items": "භාණ්ඩ",
+    "users": "පරිශීලකයින්",
+    "sales": "විකුණුම්",
+    "notifications": "දැනුම්දීම්"
+  },
+  "counter": {
+    "new_bill": "නව බිල්පත",
+    "scan_barcode": "බාකෝඩය ස්කෑන් කරන්න",
+    "search_item": "භාණ්ඩය සොයන්න",
+    "cart": "කූඩය",
+    "checkout": "ගෙවීම",
+    "payment_method": "ගෙවීමේ ක්‍රමය",
+    "cash": "මුදල්",
+    "card": "කාඩ්",
+    "discount": "වට්ටම",
+    "total": "මුළු එකතුව",
+    "print_receipt": "රශිදය මුද්‍රණය කරන්න",
+    "bill_history": "බිල් ඉතිහාසය"
+  }
+}
