@@ -118,6 +118,29 @@
   --sidebar-ring: oklch(0.66 0.19 264);
 }
 
+/* Thermal receipt font — referenced by #receipt div */
+.receipt-font {
+  font-family: 'Courier New', Courier, monospace;
+}
+
+/* Mobile cart FAB — sits above iPhone home indicator */
+.fab-safe-bottom {
+  bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px));
+}
+
+/* Barcode scanner line sweep animation */
+@keyframes barcode-sweep {
+  0%   { transform: translateY(0); opacity: 1; }
+  48%  { opacity: 1; }
+  50%  { transform: translateY(88px); opacity: 0; }
+  51%  { transform: translateY(0); opacity: 0; }
+  52%  { opacity: 1; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+.animate-barcode-sweep {
+  animation: barcode-sweep 2s ease-in-out infinite;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -137,6 +160,9 @@
   }
 
   /* Bill receipt */
+  #receipt {
+    font-family: 'Courier New', Courier, monospace;
+  }
   #receipt, #receipt * {
     visibility: visible;
   }
