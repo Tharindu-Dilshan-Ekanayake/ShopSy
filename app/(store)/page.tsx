@@ -6,7 +6,7 @@ import { getLocale } from "@/lib/i18n"
 import Image from "next/image"
 import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
-import { ImageOff, Search } from "lucide-react"
+import { ImageOff, Search, Sparkles, Layers, ChevronLeft, ChevronRight } from "lucide-react"
 import LocaleToggle from "./_components/LocaleToggle"
 
 export const metadata: Metadata = { title: "Store" }
@@ -31,8 +31,18 @@ interface CategoryDoc {
 }
 
 const labels = {
-  en: { all: "All", noProducts: "No products found", clearSearch: "Clear search", inStock: "In Stock", outOfStock: "Out of Stock", searchPlaceholder: "Search products…", previous: "Previous", next: "Next", staffLogin: "Staff Login" },
-  si: { all: "සියල්ල", noProducts: "නිෂ්පාදන හමු නොවිණි", clearSearch: "සෙවීම ඉවත් කරන්න", inStock: "තොගයේ ඇත", outOfStock: "තොගය නැත", searchPlaceholder: "නිෂ්පාදන සොයන්න…", previous: "පෙර", next: "ඊළඟ", staffLogin: "කාර්ය මණ්ඩල පිවිසුම" },
+  en: {
+    all: "All", noProducts: "No products found", clearSearch: "Clear search", inStock: "In Stock", outOfStock: "Out of Stock",
+    searchPlaceholder: "Search products…", previous: "Previous", next: "Next", staffLogin: "Staff Login",
+    heroTag: "Fresh stock, updated daily", heroTitle: "Everything your home needs, in one place",
+    heroSubtitle: "Browse our full range of products with real-time stock — pick up in store, no waiting around.",
+  },
+  si: {
+    all: "සියල්ල", noProducts: "නිෂ්පාදන හමු නොවිණි", clearSearch: "සෙවීම ඉවත් කරන්න", inStock: "තොගයේ ඇත", outOfStock: "තොගය නැත",
+    searchPlaceholder: "නිෂ්පාදන සොයන්න…", previous: "පෙර", next: "ඊළඟ", staffLogin: "කාර්ය මණ්ඩල පිවිසුම",
+    heroTag: "දිනපතා අලුත් වන තොගය", heroTitle: "ඔබේ නිවසට අවශ්‍ය සියල්ල, එක් තැනකින්",
+    heroSubtitle: "සියලුම නිෂ්පාදන තත්‍ය කාලීන තොග තත්ත්වය සමඟ බලන්න — කඩයෙන්ම රැගෙන යන්න.",
+  },
 }
 
 export default async function StorePage({ searchParams }: PageProps) {
@@ -67,14 +77,14 @@ export default async function StorePage({ searchParams }: PageProps) {
   const pages = Math.ceil(total / limit)
 
   return (
-    <main className="min-h-screen bg-linear-to-b from-primary/5 to-background">
+    <main className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b bg-background/80 backdrop-blur-sm sticky top-0 z-10">
+      <header className="border-b border-border/70 bg-background/80 backdrop-blur-md sticky top-0 z-20">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2 shrink-0">
-            <div className="size-8 rounded-lg bg-primary text-primary-foreground font-bold text-sm flex items-center justify-center">S</div>
+          <Link href="/" className="flex items-center gap-2 shrink-0">
+            <div className="size-8 rounded-lg bg-primary text-primary-foreground font-bold text-sm flex items-center justify-center shadow-sm shadow-primary/30">S</div>
             <span className="font-semibold text-lg hidden sm:block">ShopSy</span>
-          </div>
+          </Link>
 
           {/* Search */}
           <form className="flex-1 max-w-md" method="GET" action="/">
@@ -86,7 +96,7 @@ export default async function StorePage({ searchParams }: PageProps) {
                 defaultValue={search}
                 type="text"
                 placeholder={t.searchPlaceholder}
-                className="w-full pl-9 pr-4 py-2 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                className="w-full h-10 pl-9 pr-4 rounded-full border border-border bg-muted/50 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary focus:bg-background"
               />
             </div>
           </form>
@@ -98,20 +108,35 @@ export default async function StorePage({ searchParams }: PageProps) {
         </div>
       </header>
 
-      <div className="max-w-6xl mx-auto px-4 py-6">
+      {/* Hero */}
+      <section className="relative overflow-hidden border-b border-border/60">
+        <div aria-hidden className="absolute inset-0 -z-10">
+          <div className="animate-blob-float absolute -top-28 -left-24 size-72 rounded-full bg-primary/15 blur-3xl" />
+          <div className="animate-blob-float absolute -top-16 right-0 size-96 rounded-full bg-accent/25 blur-3xl [animation-delay:2s]" />
+        </div>
+        <div className="max-w-6xl mx-auto px-4 py-14 sm:py-20 text-center">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-medium text-primary mb-4">
+            <Sparkles className="size-3.5" /> {t.heroTag}
+          </span>
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-balance max-w-2xl mx-auto">{t.heroTitle}</h1>
+          <p className="mt-4 text-muted-foreground max-w-lg mx-auto text-balance">{t.heroSubtitle}</p>
+        </div>
+      </section>
+
+      <div className="max-w-6xl mx-auto px-4 py-8">
         {/* Category filter */}
         <div className="flex gap-2 flex-wrap mb-6">
           <Link
             href={search ? `/?search=${encodeURIComponent(search)}` : "/"}
-            className={`px-4 py-1.5 rounded-full text-sm border transition-colors ${!categorySlug ? "bg-primary text-primary-foreground border-primary" : "border-border hover:border-primary hover:text-primary"}`}
+            className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm border transition-all ${!categorySlug ? "bg-primary text-primary-foreground border-primary shadow-sm shadow-primary/25" : "border-border hover:border-primary hover:text-primary"}`}
           >
-            {t.all}
+            <Layers className="size-3.5" /> {t.all}
           </Link>
           {categories.map((cat) => (
             <Link
               key={cat._id}
               href={`/?category=${cat.slug}${search ? `&search=${encodeURIComponent(search)}` : ""}`}
-              className={`px-4 py-1.5 rounded-full text-sm border transition-colors ${categorySlug === cat.slug ? "bg-primary text-primary-foreground border-primary" : "border-border hover:border-primary hover:text-primary"}`}
+              className={`px-4 py-1.5 rounded-full text-sm border transition-all ${categorySlug === cat.slug ? "bg-primary text-primary-foreground border-primary shadow-sm shadow-primary/25" : "border-border hover:border-primary hover:text-primary"}`}
             >
               {cat.name[locale]}
             </Link>
@@ -134,27 +159,36 @@ export default async function StorePage({ searchParams }: PageProps) {
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
-            {items.map((item) => (
-              <div key={item._id} className="rounded-xl border border-border bg-card overflow-hidden group hover:border-primary/50 hover:shadow-sm transition-all">
+            {items.map((item, i) => (
+              <div
+                key={item._id}
+                style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }}
+                className="animate-fade-in-up rounded-2xl border border-border bg-card overflow-hidden group transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/10"
+              >
                 <div className="aspect-square bg-muted relative overflow-hidden">
                   {item.imageUrl ? (
-                    <Image src={item.imageUrl} alt={item.name[locale]} fill sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 25vw" className="object-cover group-hover:scale-105 transition-transform duration-300" />
+                    <Image src={item.imageUrl} alt={item.name[locale]} fill priority={i < 4} sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 25vw" className="object-cover group-hover:scale-105 transition-transform duration-500" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
                       <ImageOff className="size-8 text-muted-foreground/30" />
                     </div>
                   )}
+                  {item.stockQty === 0 && (
+                    <div className="absolute inset-0 bg-background/70 backdrop-blur-[1px] flex items-center justify-center">
+                      <Badge variant="destructive" className="text-xs">{t.outOfStock}</Badge>
+                    </div>
+                  )}
                 </div>
-                <div className="p-3 space-y-1">
+                <div className="p-3.5 space-y-1">
                   <p className="text-sm font-medium leading-tight line-clamp-2">{item.name[locale]}</p>
                   {item.category && (
                     <p className="text-xs text-muted-foreground">{item.category.name[locale]}</p>
                   )}
-                  <div className="flex items-center justify-between pt-1">
-                    <span className="text-sm font-bold text-primary">Rs. {item.price.toLocaleString()}</span>
-                    <Badge variant={item.stockQty > 0 ? "secondary" : "destructive"} className="text-xs">
-                      {item.stockQty > 0 ? t.inStock : t.outOfStock}
-                    </Badge>
+                  <div className="flex items-center justify-between pt-1.5">
+                    <span className="text-base font-bold text-primary">Rs. {item.price.toLocaleString()}</span>
+                    {item.stockQty > 0 && (
+                      <Badge variant="secondary" className="text-[10px]">{t.inStock}</Badge>
+                    )}
                   </div>
                 </div>
               </div>
@@ -165,26 +199,34 @@ export default async function StorePage({ searchParams }: PageProps) {
         {/* Pagination */}
         {pages > 1 && (
           <div className="flex items-center justify-center gap-2 mt-10">
-            {page > 1 && (
-              <Link
-                href={`/?page=${page - 1}${categorySlug ? `&category=${categorySlug}` : ""}${search ? `&search=${encodeURIComponent(search)}` : ""}`}
-                className="px-4 py-2 text-sm rounded-lg border hover:bg-muted transition-colors"
-              >
-                {t.previous}
-              </Link>
-            )}
-            <span className="text-sm text-muted-foreground px-3">{page} / {pages}</span>
-            {page < pages && (
-              <Link
-                href={`/?page=${page + 1}${categorySlug ? `&category=${categorySlug}` : ""}${search ? `&search=${encodeURIComponent(search)}` : ""}`}
-                className="px-4 py-2 text-sm rounded-lg border hover:bg-muted transition-colors"
-              >
-                {t.next}
-              </Link>
-            )}
+            <Link
+              href={page > 1 ? `/?page=${page - 1}${categorySlug ? `&category=${categorySlug}` : ""}${search ? `&search=${encodeURIComponent(search)}` : ""}` : "#"}
+              aria-disabled={page <= 1}
+              className={`inline-flex items-center gap-1 px-4 py-2 text-sm rounded-full border transition-colors ${page <= 1 ? "opacity-40 pointer-events-none" : "hover:bg-muted hover:border-primary/40"}`}
+            >
+              <ChevronLeft className="size-4" /> {t.previous}
+            </Link>
+            <span className="text-sm font-medium text-muted-foreground px-3">{page} / {pages}</span>
+            <Link
+              href={page < pages ? `/?page=${page + 1}${categorySlug ? `&category=${categorySlug}` : ""}${search ? `&search=${encodeURIComponent(search)}` : ""}` : "#"}
+              aria-disabled={page >= pages}
+              className={`inline-flex items-center gap-1 px-4 py-2 text-sm rounded-full border transition-colors ${page >= pages ? "opacity-40 pointer-events-none" : "hover:bg-muted hover:border-primary/40"}`}
+            >
+              {t.next} <ChevronRight className="size-4" />
+            </Link>
           </div>
         )}
       </div>
+
+      <footer className="border-t border-border/60 mt-8">
+        <div className="max-w-6xl mx-auto px-4 py-8 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <div className="size-6 rounded-md bg-primary text-primary-foreground font-bold text-xs flex items-center justify-center">S</div>
+            <span className="text-sm font-medium text-muted-foreground">ShopSy</span>
+          </div>
+          <p className="text-xs text-muted-foreground">© {new Date().getFullYear()} ShopSy. All rights reserved.</p>
+        </div>
+      </footer>
     </main>
   )
 }
