@@ -2,14 +2,16 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { Menu, X, LayoutDashboard, Tag, Package, Users, ShoppingCart } from "lucide-react"
+import { Menu, X, LayoutDashboard, Tag, Package, Users, ShoppingCart, Receipt } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import LogoutButton from "@/components/LogoutButton"
+import BrandLogo from "../../../components/BrandLogo"
 
 const navItems = [
   { href: "/admin", icon: LayoutDashboard, label: "Dashboard" },
   { href: "/admin/categories", icon: Tag, label: "Categories" },
   { href: "/admin/items", icon: Package, label: "Items" },
+  { href: "/admin/sales", icon: Receipt, label: "Bill History" },
   { href: "/admin/users", icon: Users, label: "Users" },
   { href: "/counter", icon: ShoppingCart, label: "Counter" },
 ]
@@ -31,10 +33,15 @@ export default function AdminMobileNav({ name, role }: { name: string; role: str
           <aside className="absolute left-0 top-0 bottom-0 w-64 bg-sidebar flex flex-col shadow-xl">
             {/* Header */}
             <div className="h-14 flex items-center justify-between px-4 border-b border-sidebar-border">
-              <div className="flex items-center gap-2">
-                <div className="size-7 rounded-lg bg-primary text-primary-foreground font-bold text-sm flex items-center justify-center">S</div>
-                <span className="font-semibold text-sm">ShopSy Admin</span>
-              </div>
+              <BrandLogo
+                href="/admin"
+                label="ShopSy Admin"
+                variant="professional"
+                labelClassName="font-semibold text-sm"
+                imageSizeClassName="size-9"
+                backgroundClassName="bg-primary"
+                imageClassName="object-contain p-1.5"
+              />
               <Button type="button" variant="ghost" size="icon-sm" onClick={() => setOpen(false)}>
                 <X className="size-4" />
               </Button>

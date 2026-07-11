@@ -2,6 +2,8 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import LoginForm from "./_components/LoginForm"
 import { Zap, ShieldCheck, Languages } from "lucide-react"
+import BrandLogo from "../../../components/BrandLogo"
+
 
 export const metadata: Metadata = { title: "Sign In" }
 
@@ -21,10 +23,16 @@ export default function LoginPage() {
           <div className="animate-blob-float absolute bottom-0 right-0 size-80 rounded-full bg-white/10 blur-3xl [animation-delay:3s]" />
         </div>
 
-        <Link href="/" className="flex items-center gap-2 w-fit">
-          <div className="size-9 rounded-xl bg-white/15 backdrop-blur-sm font-bold text-lg flex items-center justify-center">S</div>
-          <span className="font-semibold text-lg">ShopSy POS</span>
-        </Link>
+        <BrandLogo
+          href="/"
+          label="ShopSy"
+          className="w-fit"
+          variant="professional"
+          labelClassName="font-semibold text-lg"
+          imageSizeClassName="size-11"
+            backgroundClassName="bg-white/15 backdrop-blur-sm"
+          imageClassName="object-contain p-2"
+        />
 
         <div className="max-w-sm">
           <h1 className="text-3xl font-bold tracking-tight text-balance">Run your store with confidence</h1>
@@ -52,8 +60,17 @@ export default function LoginPage() {
       <div className="relative flex items-center justify-center p-6 bg-linear-to-br from-primary/5 via-background to-accent/10">
         <div className="w-full max-w-sm">
           <div className="text-center mb-6 lg:hidden">
-            <div className="inline-flex items-center justify-center size-14 rounded-2xl bg-primary text-primary-foreground font-bold text-2xl mb-4 shadow-lg shadow-primary/30">S</div>
-            <h1 className="text-2xl font-bold tracking-tight">ShopSy POS</h1>
+            <BrandLogo
+              href="/"
+              label="ShopSy"
+              className="inline-flex mb-4"
+              variant="professional"
+              labelClassName="font-semibold text-2xl"
+              imageSizeClassName="size-16"
+              backgroundClassName="bg-primary text-primary-foreground shadow-lg shadow-primary/30"
+              imageClassName="object-contain p-2.5"
+            />
+            <h1 className="text-2xl font-bold tracking-tight">ShopSy</h1>
           </div>
 
           <LoginForm />

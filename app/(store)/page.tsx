@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { ImageOff, Search, Sparkles, Layers, ChevronLeft, ChevronRight } from "lucide-react"
 import LocaleToggle from "./_components/LocaleToggle"
 import BG from "../../assests/BG.webp"
+import BrandLogo from "../../components/BrandLogo"
 
 export const metadata: Metadata = { title: "Store" }
 
@@ -82,10 +83,16 @@ export default async function StorePage({ searchParams }: PageProps) {
       {/* Header */}
       <header className="border-b border-border/70 bg-background/80 backdrop-blur-md sticky top-0 z-20">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between gap-3">
-          <Link href="/" className="flex items-center gap-2 shrink-0">
-            <div className="size-8 rounded-lg bg-primary text-primary-foreground font-bold text-sm flex items-center justify-center shadow-sm shadow-primary/30">S</div>
-            <span className="font-semibold text-lg hidden sm:block">ShopSy</span>
-          </Link>
+          <BrandLogo
+            href="/"
+            label="ShopSy"
+            className="shrink-0"
+            variant="professional"
+            labelClassName="font-semibold text-lg hidden sm:block"
+            imageSizeClassName="size-12"
+            backgroundClassName=" shadow-sm shadow-primary/10"
+            imageClassName="object-contain p-1.5"
+          />
 
           {/* Search */}
           <form className="flex-1 max-w-md" method="GET" action="/">
@@ -224,10 +231,15 @@ export default async function StorePage({ searchParams }: PageProps) {
 
       <footer className="border-t border-border/60 mt-8">
         <div className="max-w-6xl mx-auto px-4 py-8 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <div className="size-6 rounded-md bg-primary text-primary-foreground font-bold text-xs flex items-center justify-center">S</div>
-            <span className="text-sm font-medium text-muted-foreground">ShopSy</span>
-          </div>
+          <BrandLogo
+            href="/"
+            label="ShopSy"
+            variant="professional"
+            labelClassName="text-sm font-medium text-muted-foreground"
+            imageSizeClassName="size-8"
+            backgroundClassName="bg-primary"
+            imageClassName="object-contain p-1.5"
+          />
           <p className="text-xs text-muted-foreground">© {new Date().getFullYear()} ShopSy. All rights reserved.</p>
         </div>
       </footer>
