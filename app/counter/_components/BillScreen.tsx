@@ -108,18 +108,18 @@ function CartPanel({
 
       {/* Item list */}
       <ScrollArea className="flex-1 bg-muted/20">
-        <div className="p-3 space-y-2">
-          {cart.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-16 gap-3 text-muted-foreground">
-              <div className="size-16 rounded-2xl bg-muted flex items-center justify-center">
-                <ShoppingCart className="size-7 opacity-30" />
-              </div>
-              <div className="text-center">
-                <p className="text-sm font-medium">Cart is empty</p>
-                <p className="text-xs mt-0.5 opacity-70">Search or scan to add items</p>
-              </div>
+        {cart.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full min-h-[50vh] gap-4 text-muted-foreground px-8">
+            <div className="size-20 rounded-3xl bg-muted flex items-center justify-center">
+              <ShoppingCart className="size-9 opacity-30" />
             </div>
-          )}
+            <div className="text-center space-y-1">
+              <p className="text-base font-semibold text-foreground">Cart is empty</p>
+              <p className="text-sm opacity-70">Search above or tap the scan button to add items</p>
+            </div>
+          </div>
+        ) : (
+        <div className="p-3 space-y-2">
           {cart.map((item) => (
             <div key={item._id} className="rounded-2xl border bg-card p-3 shadow-xs">
               <div className="flex items-start gap-3">
@@ -172,6 +172,7 @@ function CartPanel({
             </div>
           ))}
         </div>
+        )}
       </ScrollArea>
 
       {/* Footer */}
@@ -302,8 +303,8 @@ export default function BillScreen({
   const [cart, setCart] = useState<CartItem[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [searchResults, setSearchResults] = useState<Item[]>([])
+  const [searchFocused, setSearchFocused] = useState(false)
   const [scanning, setScanning] = useState(false)
-  const [cartSheetOpen, setCartSheetOpen] = useState(false)
   const [checkoutOpen, setCheckoutOpen] = useState(false)
   const [receiptOpen, setReceiptOpen] = useState(false)
   const [paymentMethod, setPaymentMethod] = useState<"cash" | "card">("cash")
@@ -313,7 +314,6 @@ export default function BillScreen({
   const searchRef = useRef<HTMLInputElement>(null)
 
   const cartTotal = cart.reduce((s, i) => s + i.price * i.qty, 0)
-  const cartCount = cart.reduce((s, i) => s + i.qty, 0)
   const discountAmt = Number(discount) || 0
   const grandTotal = Math.max(0, cartTotal - discountAmt)
 
@@ -361,10 +361,7 @@ export default function BillScreen({
     addToCart(await res.json())
   }
 
-  const openCheckout = () => {
-    setCartSheetOpen(false)
-    setCheckoutOpen(true)
-  }
+  const openCheckout = () => setCheckoutOpen(true)
 
   const checkout = async () => {
     if (cart.length === 0) return
@@ -401,158 +398,124 @@ export default function BillScreen({
   }
 
   return (
-    <div className="flex h-[calc(100dvh-56px)] overflow-hidden relative">
+    <div className="flex flex-col h-[calc(100dvh-56px)] overflow-hidden relative">
 
-      {/* ── LEFT: Search + Results ── */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-
-        {/* Search bar */}
-        <div className="px-3 pt-3 pb-2 sm:px-4 sm:pt-4 border-b bg-background/95 backdrop-blur-sm shrink-0">
-          <div className="flex gap-2">
-            <div className="relative flex-1">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
-              <Input
-                ref={searchRef}
-                className="pl-10 h-12 rounded-2xl text-base sm:text-sm focus:border-primary"
-                placeholder="Search items…"
-                value={searchQuery}
-                onChange={(e) => searchItems(e.target.value)}
-                autoComplete="off"
-                autoCorrect="off"
-                autoCapitalize="off"
-                spellCheck={false}
-              />
-              {searchQuery && (
-                <button
-                  type="button"
-                  aria-label="Clear search"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 size-7 flex items-center justify-center rounded-full bg-muted text-muted-foreground hover:text-foreground"
-                  onClick={() => { setSearchQuery(""); setSearchResults([]); searchRef.current?.focus() }}
-                >
-                  <X className="size-3.5" />
-                </button>
-              )}
-            </div>
-            {/* Scan button */}
-            <button
-              type="button"
-              onClick={() => setScanning(true)}
-              className="h-12 px-4 rounded-2xl shrink-0 font-semibold flex items-center gap-2 bg-primary text-primary-foreground hover:bg-primary/90 active:scale-95 transition-all text-sm shadow-sm"
-            >
-              <ScanLine className="size-5" />
-              <span className="hidden sm:inline">Scan</span>
-            </button>
+      {/* ── Compact search + scan bar (adding items is a small, optional step) ── */}
+      <div className="relative shrink-0 border-b bg-background/95 backdrop-blur-sm z-30">
+        <div className="px-3 py-2.5 sm:px-4 flex gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
+            <Input
+              ref={searchRef}
+              className="pl-10 pr-9 h-11 rounded-xl text-base sm:text-sm focus:border-primary"
+              placeholder="Search items to add…"
+              value={searchQuery}
+              onChange={(e) => searchItems(e.target.value)}
+              onFocus={() => setSearchFocused(true)}
+              onBlur={() => setTimeout(() => setSearchFocused(false), 150)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && searchResults.length > 0) {
+                  e.preventDefault()
+                  addToCart(searchResults[0])
+                }
+              }}
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="off"
+              spellCheck={false}
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                aria-label="Clear search"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 size-6 flex items-center justify-center rounded-full bg-muted text-muted-foreground hover:text-foreground"
+                onClick={() => { setSearchQuery(""); setSearchResults([]); searchRef.current?.focus() }}
+              >
+                <X className="size-3.5" />
+              </button>
+            )}
           </div>
+          {/* Scan button — optional shortcut, kept small */}
+          <button
+            type="button"
+            onClick={() => setScanning(true)}
+            aria-label="Scan barcode"
+            title="Scan barcode"
+            className="h-11 w-11 shrink-0 rounded-xl flex items-center justify-center bg-primary text-primary-foreground hover:bg-primary/90 active:scale-95 transition-all shadow-sm"
+          >
+            <ScanLine className="size-5" />
+          </button>
         </div>
 
-        {/* Results area */}
-        <div className="flex-1 overflow-y-auto overscroll-contain">
+        {/* Search results — small dropdown overlay, doesn't take main space */}
+        {searchFocused && searchQuery && (
+          <div className="absolute inset-x-3 sm:inset-x-4 top-full mt-1.5 rounded-2xl border bg-card shadow-lg max-h-[60vh] overflow-y-auto overscroll-contain">
+            {searchResults.length > 0 ? (
+              <div className="p-2 space-y-1">
+                {searchResults.map((item) => (
+                  <button
+                    key={item._id}
+                    type="button"
+                    onClick={() => addToCart(item)}
+                    className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-primary/5 active:bg-primary/8 transition-colors text-left group"
+                  >
+                    {item.imageUrl ? (
+                      <Image
+                        src={item.imageUrl}
+                        alt={item.name.en}
+                        width={44}
+                        height={44}
+                        className="size-11 rounded-lg object-cover shrink-0 border"
+                      />
+                    ) : (
+                      <div className="size-11 rounded-lg bg-muted shrink-0 flex items-center justify-center border">
+                        <Package className="size-5 text-muted-foreground/40" />
+                      </div>
+                    )}
 
-          {/* Search results */}
-          {searchResults.length > 0 && (
-            <div className="p-3 space-y-2">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide px-1 mb-2">
-                {searchResults.length} result{searchResults.length !== 1 ? "s" : ""}
-              </p>
-              {searchResults.map((item) => (
-                <button
-                  key={item._id}
-                  type="button"
-                  onClick={() => addToCart(item)}
-                  className="w-full flex items-center gap-3 p-3 rounded-2xl border border-border/70 bg-card hover:border-primary hover:bg-primary/4 active:scale-[0.98] active:bg-primary/8 transition-all text-left group shadow-xs"
-                >
-                  {item.imageUrl ? (
-                    <Image
-                      src={item.imageUrl}
-                      alt={item.name.en}
-                      width={60}
-                      height={60}
-                      className="size-15 rounded-xl object-cover shrink-0 border"
-                    />
-                  ) : (
-                    <div className="size-15 rounded-xl bg-muted shrink-0 flex items-center justify-center border">
-                      <Package className="size-6 text-muted-foreground/40" />
-                    </div>
-                  )}
-
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-sm leading-tight truncate">{item.name.en}</p>
-                    <p className="text-xs text-muted-foreground truncate mt-0.5">{item.name.si}</p>
-                    <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                      <span className="text-sm font-bold text-primary">
-                        Rs. {item.price.toLocaleString()}
-                      </span>
-                      <span
-                        className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
-                          item.stockQty === 0
-                            ? "bg-red-50 text-red-600"
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-sm leading-tight truncate">{item.name.en}</p>
+                      <div className="flex items-center gap-2 mt-1 flex-wrap">
+                        <span className="text-sm font-bold text-primary">
+                          Rs. {item.price.toLocaleString()}
+                        </span>
+                        <span
+                          className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${
+                            item.stockQty === 0
+                              ? "bg-red-50 text-red-600"
+                              : item.stockQty < 5
+                              ? "bg-amber-50 text-amber-700"
+                              : "bg-emerald-50 text-emerald-700"
+                          }`}
+                        >
+                          {item.stockQty === 0
+                            ? "Out of stock"
                             : item.stockQty < 5
-                            ? "bg-amber-50 text-amber-700"
-                            : "bg-emerald-50 text-emerald-700"
-                        }`}
-                      >
-                        {item.stockQty === 0
-                          ? "Out of stock"
-                          : item.stockQty < 5
-                          ? `Only ${item.stockQty} left`
-                          : `${item.stockQty} in stock`}
-                      </span>
+                            ? `${item.stockQty} left`
+                            : `${item.stockQty} in stock`}
+                        </span>
+                      </div>
                     </div>
-                  </div>
 
-                  <div className="size-10 rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground flex items-center justify-center shrink-0 transition-colors">
-                    <Plus className="size-5" />
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* No results */}
-          {searchResults.length === 0 && searchQuery && (
-            <div className="flex flex-col items-center justify-center py-20 gap-3 px-6">
-              <div className="size-16 rounded-2xl bg-muted flex items-center justify-center">
-                <Search className="size-7 text-muted-foreground/30" />
+                    <div className="size-8 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground flex items-center justify-center shrink-0 transition-colors">
+                      <Plus className="size-4" />
+                    </div>
+                  </button>
+                ))}
               </div>
-              <div className="text-center text-muted-foreground">
-                <p className="font-semibold text-foreground">No items found</p>
-                <p className="text-sm mt-1">Try a different name or scan the barcode</p>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-8 px-6 gap-2 text-muted-foreground">
+                <Search className="size-6 opacity-30" />
+                <p className="text-sm font-medium text-foreground">No items found</p>
+                <p className="text-xs">Try a different name or scan the barcode</p>
               </div>
-            </div>
-          )}
-
-          {/* Empty / ready state */}
-          {searchResults.length === 0 && !searchQuery && (
-            <div className="flex flex-col items-center justify-center h-full min-h-80 px-8 gap-6">
-              <div className="relative">
-                <div className="size-24 rounded-3xl bg-linear-to-br from-primary/15 to-primary/5 flex items-center justify-center border border-primary/10">
-                  <ScanLine className="size-12 text-primary/50" />
-                </div>
-                <div className="absolute -top-1 -right-1 size-6 rounded-full bg-primary text-primary-foreground text-[10px] font-black flex items-center justify-center shadow">
-                  +
-                </div>
-              </div>
-              <div className="text-center space-y-1.5">
-                <p className="text-lg font-bold">Ready to bill</p>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  Search by name or tap <strong>Scan</strong> to read a barcode
-                </p>
-              </div>
-              <div className="flex gap-2 flex-wrap justify-center">
-                <span className="flex items-center gap-1.5 text-xs bg-muted text-muted-foreground rounded-xl px-3 py-2 font-medium">
-                  <Search className="size-3.5" /> Type to search
-                </span>
-                <span className="flex items-center gap-1.5 text-xs bg-muted text-muted-foreground rounded-xl px-3 py-2 font-medium">
-                  <ScanLine className="size-3.5" /> Tap Scan
-                </span>
-              </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* ── RIGHT: Desktop cart sidebar ── */}
-      <div className="hidden lg:flex w-85 shrink-0 border-l flex-col bg-card">
+      {/* ── Cart — the main event, always front and center ── */}
+      <div className="flex-1 min-w-0 overflow-hidden">
         <CartPanel
           cart={cart}
           cartTotal={cartTotal}
@@ -562,49 +525,6 @@ export default function BillScreen({
           onCheckout={openCheckout}
         />
       </div>
-
-      {/* ── Mobile FAB — respects iPhone safe area ── */}
-      <button
-        type="button"
-        onClick={() => setCartSheetOpen(true)}
-        className="fab-safe-bottom lg:hidden fixed right-4 z-40 flex items-center gap-2.5 bg-primary text-primary-foreground rounded-2xl shadow-2xl shadow-primary/30 px-5 py-3.5 font-bold text-sm active:scale-95 transition-transform"
-      >
-        <div className="relative">
-          <ShoppingCart className="size-5" />
-          {cartCount > 0 && (
-            <span className="absolute -top-1.5 -right-1.5 size-4 rounded-full bg-white text-primary text-[9px] font-black flex items-center justify-center">
-              {cartCount > 9 ? "9+" : cartCount}
-            </span>
-          )}
-        </div>
-        <span>{cartCount > 0 ? `Rs. ${cartTotal.toLocaleString()}` : "Cart"}</span>
-      </button>
-
-      {/* ── Mobile Cart Sheet ── */}
-      <Sheet open={cartSheetOpen} onOpenChange={setCartSheetOpen}>
-        <SheetContent side="bottom" className="h-[88dvh] p-0 flex flex-col rounded-t-3xl overflow-hidden">
-          {/* Drag handle */}
-          <div className="flex justify-center pt-3 pb-1 shrink-0">
-            <div className="w-10 h-1 rounded-full bg-muted-foreground/25" />
-          </div>
-          <SheetHeader className="px-4 pb-3 shrink-0">
-            <SheetTitle className="flex items-center gap-2 text-base">
-              <ShoppingCart className="size-4 text-primary" />
-              Shopping Cart
-            </SheetTitle>
-          </SheetHeader>
-          <div className="flex-1 overflow-hidden flex flex-col border-t">
-            <CartPanel
-              cart={cart}
-              cartTotal={cartTotal}
-              onUpdateQty={updateQty}
-              onRemove={removeFromCart}
-              onClear={() => setCart([])}
-              onCheckout={openCheckout}
-            />
-          </div>
-        </SheetContent>
-      </Sheet>
 
       {/* ── Barcode Scanner ── */}
       <BarcodeScanner open={scanning} onClose={() => setScanning(false)} onScan={handleBarcodeScan} />

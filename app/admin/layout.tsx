@@ -1,14 +1,16 @@
 import { verifyAdmin } from "@/lib/dal"
 import Link from "next/link"
-import { LayoutDashboard, Tag, Package, Users, ShoppingCart } from "lucide-react"
+import { LayoutDashboard, Tag, Package, Users, ShoppingCart, Receipt } from "lucide-react"
 import LogoutButton from "@/components/LogoutButton"
 import NotificationBell from "@/components/NotificationBell"
 import AdminMobileNav from "./_components/AdminMobileNav"
+import BrandLogo from "../../components/BrandLogo"
 
 const navItems = [
   { href: "/admin", icon: LayoutDashboard, label: "Dashboard" },
   { href: "/admin/categories", icon: Tag, label: "Categories" },
   { href: "/admin/items", icon: Package, label: "Items" },
+  { href: "/admin/sales", icon: Receipt, label: "Bill History" },
   { href: "/admin/users", icon: Users, label: "Users" },
 ]
 
@@ -20,8 +22,15 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       {/* Sidebar — desktop only */}
       <aside className="hidden lg:flex w-56 shrink-0 flex-col border-r bg-sidebar">
         <div className="h-14 flex items-center gap-2 px-4 border-b border-sidebar-border">
-          <div className="size-7 rounded-lg bg-primary text-primary-foreground font-bold text-sm flex items-center justify-center">S</div>
-          <span className="font-semibold text-sm">ShopSy Admin</span>
+          <BrandLogo
+            href="/admin"
+            label="ShopSy Admin"
+            variant="professional"
+            labelClassName="font-semibold text-sm"
+            imageSizeClassName="size-9"
+            backgroundClassName="bg-primary"
+            imageClassName="object-contain p-1.5"
+          />
         </div>
 
         <nav className="flex-1 p-2 space-y-0.5">
@@ -65,8 +74,15 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
           {/* Brand on mobile */}
           <div className="flex items-center gap-2 lg:hidden">
-            <div className="size-7 rounded-lg bg-primary text-primary-foreground font-bold text-sm flex items-center justify-center">S</div>
-            <span className="font-semibold text-sm">ShopSy Admin</span>
+            <BrandLogo
+              href="/admin"
+              label="ShopSy Admin"
+              variant="professional"
+              labelClassName="font-semibold text-sm"
+              imageSizeClassName="size-9"
+              backgroundClassName="bg-primary"
+              imageClassName="object-contain p-1.5"
+            />
           </div>
 
           <div className="flex-1" />

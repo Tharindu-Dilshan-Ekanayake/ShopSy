@@ -5,6 +5,7 @@ import Link from "next/link"
 import { History, LayoutDashboard, Menu, X, User } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import LogoutButton from "@/components/LogoutButton"
+import BrandLogo from "../../../components/BrandLogo"
 
 export default function CounterNav({ name, role }: { name: string; role: string }) {
   const [open, setOpen] = useState(false)
@@ -13,10 +14,15 @@ export default function CounterNav({ name, role }: { name: string; role: string 
     <>
       <header className="h-14 border-b bg-card flex items-center justify-between px-4 shrink-0 sticky top-0 z-10">
         {/* Brand */}
-        <div className="flex items-center gap-2">
-          <div className="size-7 rounded-lg bg-primary text-primary-foreground font-bold text-sm flex items-center justify-center">S</div>
-          <span className="font-semibold text-sm">Counter</span>
-        </div>
+        <BrandLogo
+          href="/counter"
+          label="Counter"
+          variant="professional"
+          labelClassName="font-semibold text-sm"
+          imageSizeClassName="size-9"
+          backgroundClassName="bg-primary"
+          imageClassName="object-contain p-1.5"
+        />
 
         {/* Desktop nav */}
         <nav className="hidden sm:flex items-center gap-1">
