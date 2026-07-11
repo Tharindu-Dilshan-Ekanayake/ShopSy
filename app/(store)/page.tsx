@@ -8,6 +8,7 @@ import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
 import { ImageOff, Search, Sparkles, Layers, ChevronLeft, ChevronRight } from "lucide-react"
 import LocaleToggle from "./_components/LocaleToggle"
+import BG from "../../assests/BG.webp"
 
 export const metadata: Metadata = { title: "Store" }
 
@@ -109,17 +110,20 @@ export default async function StorePage({ searchParams }: PageProps) {
       </header>
 
       {/* Hero */}
-      <section className="relative overflow-hidden border-b border-border/60">
-        <div aria-hidden className="absolute inset-0 -z-10">
-          <div className="animate-blob-float absolute -top-28 -left-24 size-72 rounded-full bg-primary/15 blur-3xl" />
-          <div className="animate-blob-float absolute -top-16 right-0 size-96 rounded-full bg-accent/25 blur-3xl [animation-delay:2s]" />
-        </div>
-        <div className="max-w-6xl mx-auto px-4 py-14 sm:py-20 text-center">
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-medium text-primary mb-4">
+      <section
+        className="relative overflow-hidden border-b border-border/60 bg-cover bg-right bg-no-repeat"
+        style={{ backgroundImage: `url(${BG.src})` }}
+      >
+        {/* mobile: fade only behind the text band at the bottom, rest of the photo stays clear */}
+        <div aria-hidden className="absolute inset-0 bg-linear-to-t from-background from-0% to-transparent to-65% md:hidden" />
+        {/* desktop: fade only on the left where the text sits, bags stay clear on the right */}
+        <div aria-hidden className="absolute inset-0 hidden md:block bg-linear-to-r from-background from-0% to-transparent to-60%" />
+        <div className="relative min-h-90 sm:min-h-105 lg:min-h-120 max-w-6xl mx-auto px-4 py-10 sm:py-14 flex flex-col justify-end md:justify-center items-center md:items-start text-center md:text-left">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 backdrop-blur-sm px-3 py-1 text-xs font-medium text-primary mb-4">
             <Sparkles className="size-3.5" /> {t.heroTag}
           </span>
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-balance max-w-2xl mx-auto">{t.heroTitle}</h1>
-          <p className="mt-4 text-muted-foreground max-w-lg mx-auto text-balance">{t.heroSubtitle}</p>
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-balance max-w-xl">{t.heroTitle}</h1>
+          <p className="mt-4 text-muted-foreground max-w-lg text-balance">{t.heroSubtitle}</p>
         </div>
       </section>
 
