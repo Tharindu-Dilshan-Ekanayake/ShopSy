@@ -1,25 +1,28 @@
 "use client"
 
-import { useActionState } from "react"
+import { useActionState, useState } from "react"
 import { loginAction } from "@/app/actions/auth"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Mail, Lock, Eye, EyeOff, ArrowRight, AlertCircle } from "lucide-react"
 
 export default function LoginForm() {
   const [state, action, pending] = useActionState(loginAction, undefined)
+  const [showPassword, setShowPassword] = useState(false)
 
   return (
-    <Card className="shadow-xl border-border/50">
-      <CardHeader className="pb-4">
-        <CardTitle className="text-lg">Welcome back</CardTitle>
-        <CardDescription>Enter your credentials to continue</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form action={action} className="space-y-4">
-          <div className="space-y-1.5">
-            <Label htmlFor="email">Email</Label>
+    <div className="rounded-2xl border border-border/60 bg-card/90 backdrop-blur-sm shadow-xl shadow-primary/5 p-6 sm:p-8">
+      <div className="mb-6">
+        <h2 className="text-lg font-semibold">Welcome back</h2>
+        <p className="text-sm text-muted-foreground mt-1">Enter your credentials to continue</p>
+      </div>
+
+      <form action={action} className="space-y-4">
+        <div className="space-y-1.5">
+          <Label htmlFor="email">Email</Label>
+          <div className="relative">
+            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
             <Input
               id="email"
               name="email"
@@ -27,32 +30,51 @@ export default function LoginForm() {
               placeholder="you@example.com"
               autoComplete="email"
               required
+              className="h-11 pl-9"
             />
           </div>
+        </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="password">Password</Label>
+        <div className="space-y-1.5">
+          <Label htmlFor="password">Password</Label>
+          <div className="relative">
+            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
             <Input
               id="password"
               name="password"
-              type="password"
+              type={showPassword ? "text" : "password"}
               placeholder="••••••••"
               autoComplete="current-password"
               required
+              className="h-11 pl-9 pr-9"
             />
+            <button
+              type="button"
+              onClick={() => setShowPassword((v) => !v)}
+              tabIndex={-1}
+              aria-label={showPassword ? "Hide password" : "Show password"}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+            </button>
           </div>
+        </div>
 
-          {state?.error && (
-            <p className="text-sm text-destructive bg-destructive/10 px-3 py-2 rounded-md">
-              {state.error}
-            </p>
+        {state?.error && (
+          <p className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 px-3 py-2 rounded-lg">
+            <AlertCircle className="size-4 shrink-0" />
+            {state.error}
+          </p>
+        )}
+
+        <Button type="submit" className="w-full h-11 gap-2" disabled={pending}>
+          {pending ? "Signing in…" : (
+            <>
+              Sign In <ArrowRight className="size-4" />
+            </>
           )}
-
-          <Button type="submit" className="w-full" disabled={pending}>
-            {pending ? "Signing in…" : "Sign In"}
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
+        </Button>
+      </form>
+    </div>
   )
 }
