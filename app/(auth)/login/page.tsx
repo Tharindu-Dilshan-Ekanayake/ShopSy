@@ -1,8 +1,10 @@
 import type { Metadata } from "next"
 import Link from "next/link"
+import Image from "next/image"
 import LoginForm from "./_components/LoginForm"
 import { Zap, ShieldCheck, Languages } from "lucide-react"
 import BrandLogo from "../../../components/BrandLogo"
+import login_bg from "../../../assests/LOGIN_BG.jpg"
 
 
 export const metadata: Metadata = { title: "Sign In" }
@@ -17,7 +19,17 @@ export default function LoginPage() {
   return (
     <main className="min-h-screen grid lg:grid-cols-2">
       {/* Brand panel */}
-      <div className="relative hidden lg:flex flex-col justify-between overflow-hidden bg-primary p-10 text-primary-foreground">
+      <div className="relative isolate hidden lg:flex flex-col justify-between overflow-hidden bg-primary p-10 text-primary-foreground">
+        <Image
+          src={login_bg}
+          alt=""
+          fill
+          priority
+          sizes="50vw"
+          className="-z-30 object-cover"
+        />
+        <div aria-hidden className="absolute inset-0 -z-20 bg-primary/45 mix-blend-multiply" />
+        <div aria-hidden className="absolute inset-0 -z-10 bg-linear-to-b from-black/55 via-black/5 to-black/60" />
         <div
           aria-hidden
           className="absolute inset-0 -z-10 opacity-[0.08]"
@@ -26,11 +38,6 @@ export default function LoginPage() {
             backgroundSize: "28px 28px",
           }}
         />
-        <div aria-hidden className="absolute inset-0 -z-10">
-          <div className="animate-blob-float absolute -top-32 -left-20 size-96 rounded-full bg-white/10 blur-3xl" />
-          <div className="animate-blob-float absolute bottom-0 right-0 size-80 rounded-full bg-white/10 blur-3xl [animation-delay:3s]" />
-        </div>
-        <div aria-hidden className="absolute inset-0 -z-10 bg-linear-to-t from-black/15 via-transparent to-transparent" />
 
         <BrandLogo
           href="/"
@@ -69,14 +76,26 @@ export default function LoginPage() {
       </div>
 
       {/* Form panel */}
-      <div className="relative flex items-center justify-center p-6 bg-background">
+      <div className="relative isolate flex items-center justify-center p-6 overflow-hidden bg-background">
+        <Image
+          src={login_bg}
+          alt=""
+          fill
+          sizes="(min-width: 1024px) 50vw, 100vw"
+          className="-z-30 object-cover"
+        />
+        <div aria-hidden className="absolute inset-0 -z-20 bg-background/85 backdrop-blur-2xl" />
         <div
           aria-hidden
-          className="absolute inset-0 -z-10 bg-linear-to-br from-primary/7 via-transparent to-accent/12"
+          className="absolute inset-0 -z-10 bg-linear-to-br from-primary/10 via-transparent to-accent/15"
         />
         <div
           aria-hidden
-          className="absolute -top-24 -right-24 -z-10 size-80 rounded-full bg-primary/10 blur-3xl lg:hidden"
+          className="absolute -top-24 -right-24 -z-10 size-80 rounded-full bg-primary/15 blur-3xl"
+        />
+        <div
+          aria-hidden
+          className="absolute -bottom-24 -left-24 -z-10 size-72 rounded-full bg-accent/20 blur-3xl lg:hidden"
         />
 
         <div className="w-full max-w-sm relative z-10 animate-fade-in-up">
