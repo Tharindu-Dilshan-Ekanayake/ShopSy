@@ -44,10 +44,14 @@ export async function PATCH(req: Request, ctx: RouteContext<"/api/items/[id]">) 
     const nameSi = formData.get("name.si") as string
     if (nameEn && nameSi) updates.name = { en: nameEn, si: nameSi }
 
-    const fields = ["category", "price", "costPrice", "stockQty", "lowStockThreshold", "barcode", "status"]
+    const fields = ["category", "price", "unit", "unitSize", "costPrice", "stockQty", "lowStockThreshold", "barcode", "status", "discountType", "discountValue", "discountActive"]
+    const numberFields = ["price", "unitSize", "costPrice", "stockQty", "lowStockThreshold", "discountValue"]
     for (const f of fields) {
       const val = formData.get(f)
-      if (val !== null) updates[f] = ["price", "costPrice", "stockQty", "lowStockThreshold"].includes(f) ? Number(val) : val
+      if (val === null) continue
+      if (numberFields.includes(f)) updates[f] = Number(val)
+      else if (f === "discountActive") updates[f] = val === "true"
+      else updates[f] = val
     }
 
     // Regenerate barcode image if barcode code changed

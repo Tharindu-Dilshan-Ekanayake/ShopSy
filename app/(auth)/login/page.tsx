@@ -8,9 +8,9 @@ import BrandLogo from "../../../components/BrandLogo"
 export const metadata: Metadata = { title: "Sign In" }
 
 const features = [
-  { icon: Zap, title: "Fast counter billing", desc: "Scan, bill, and print in seconds" },
-  { icon: ShieldCheck, title: "Secure by design", desc: "Role-based access for staff and admins" },
-  { icon: Languages, title: "Built for Sri Lanka", desc: "English and Sinhala, side by side" },
+  { icon: Zap, title: "Fast Billing", desc: "Scan, bill, print instantly" },
+  { icon: ShieldCheck, title: "Secure Access", desc: "Role-based permissions" },
+  { icon: Languages, title: "Bilingual", desc: "English and Sinhala" },
 ]
 
 export default function LoginPage() {
@@ -18,10 +18,19 @@ export default function LoginPage() {
     <main className="min-h-screen grid lg:grid-cols-2">
       {/* Brand panel */}
       <div className="relative hidden lg:flex flex-col justify-between overflow-hidden bg-primary p-10 text-primary-foreground">
+        <div
+          aria-hidden
+          className="absolute inset-0 -z-10 opacity-[0.08]"
+          style={{
+            backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)",
+            backgroundSize: "28px 28px",
+          }}
+        />
         <div aria-hidden className="absolute inset-0 -z-10">
           <div className="animate-blob-float absolute -top-32 -left-20 size-96 rounded-full bg-white/10 blur-3xl" />
           <div className="animate-blob-float absolute bottom-0 right-0 size-80 rounded-full bg-white/10 blur-3xl [animation-delay:3s]" />
         </div>
+        <div aria-hidden className="absolute inset-0 -z-10 bg-linear-to-t from-black/15 via-transparent to-transparent" />
 
         <BrandLogo
           href="/"
@@ -30,18 +39,21 @@ export default function LoginPage() {
           variant="professional"
           labelClassName="font-semibold text-lg"
           imageSizeClassName="size-11"
-            backgroundClassName="bg-white/15 backdrop-blur-sm"
+          backgroundClassName="bg-white/15 backdrop-blur-sm"
           imageClassName="object-contain p-2"
         />
 
         <div className="max-w-sm">
-          <h1 className="text-3xl font-bold tracking-tight text-balance">Run your store with confidence</h1>
-          <p className="mt-3 text-primary-foreground/80 text-balance">One system for your storefront, billing counter, and inventory — built for speed.</p>
+          <h1 className="text-4xl font-bold tracking-tight text-balance">Run your store with confidence</h1>
+          <p className="mt-3 text-primary-foreground/80 text-balance leading-relaxed">Complete POS system for retail operations.</p>
 
-          <div className="mt-8 space-y-4">
+          <div className="mt-9 space-y-4">
             {features.map(({ icon: Icon, title, desc }) => (
-              <div key={title} className="flex items-start gap-3">
-                <div className="size-9 rounded-lg bg-white/15 flex items-center justify-center shrink-0">
+              <div
+                key={title}
+                className="flex items-start gap-3 rounded-xl p-2 -mx-2 transition-colors hover:bg-white/5"
+              >
+                <div className="size-9 rounded-lg bg-white/15 ring-1 ring-white/10 flex items-center justify-center shrink-0">
                   <Icon className="size-4.5" />
                 </div>
                 <div>
@@ -57,9 +69,18 @@ export default function LoginPage() {
       </div>
 
       {/* Form panel */}
-      <div className="relative flex items-center justify-center p-6 bg-linear-to-br from-primary/5 via-background to-accent/10">
-        <div className="w-full max-w-sm">
-          <div className="text-center mb-6 lg:hidden">
+      <div className="relative flex items-center justify-center p-6 bg-background">
+        <div
+          aria-hidden
+          className="absolute inset-0 -z-10 bg-linear-to-br from-primary/7 via-transparent to-accent/12"
+        />
+        <div
+          aria-hidden
+          className="absolute -top-24 -right-24 -z-10 size-80 rounded-full bg-primary/10 blur-3xl lg:hidden"
+        />
+
+        <div className="w-full max-w-sm relative z-10 animate-fade-in-up">
+          <div className="text-center mb-7 lg:hidden">
             <BrandLogo
               href="/"
               label="ShopSy"
@@ -75,9 +96,14 @@ export default function LoginPage() {
 
           <LoginForm />
 
-          <p className="text-center text-xs text-muted-foreground mt-6">
-            <Link href="/" className="hover:text-foreground transition-colors">← Back to store</Link>
-          </p>
+          <div className="mt-6 space-y-3">
+            <p className="text-center text-xs text-muted-foreground">
+              Staff &amp; admin access only — contact your administrator for a new account.
+            </p>
+            <p className="text-center text-xs text-muted-foreground">
+              <Link href="/" className="hover:text-foreground transition-colors">← Back to store</Link>
+            </p>
+          </div>
         </div>
       </div>
     </main>

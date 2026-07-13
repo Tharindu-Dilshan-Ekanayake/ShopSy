@@ -4,6 +4,8 @@ export interface IItem extends Document {
   name: { en: string; si: string }
   category: Types.ObjectId
   price: number
+  unit: "pcs" | "g" | "kg" | "ml" | "l"
+  unitSize: number
   costPrice: number
   stockQty: number
   lowStockThreshold: number
@@ -13,6 +15,9 @@ export interface IItem extends Document {
   barcodeImageUrl?: string
   barcodeImagePublicId?: string
   status: "active" | "discontinued"
+  discountType: "percentage" | "flat"
+  discountValue: number
+  discountActive: boolean
   createdAt: Date
 }
 
@@ -24,6 +29,8 @@ const ItemSchema = new Schema<IItem>(
     },
     category: { type: Schema.Types.ObjectId, ref: "Category", required: true },
     price: { type: Number, required: true, min: 0 },
+    unit: { type: String, enum: ["pcs", "g", "kg", "ml", "l"], default: "pcs" },
+    unitSize: { type: Number, default: 1, min: 0.001 },
     costPrice: { type: Number, required: true, min: 0 },
     stockQty: { type: Number, required: true, min: 0, default: 0 },
     lowStockThreshold: { type: Number, required: true, default: 5 },
@@ -33,6 +40,9 @@ const ItemSchema = new Schema<IItem>(
     barcodeImageUrl: { type: String },
     barcodeImagePublicId: { type: String },
     status: { type: String, enum: ["active", "discontinued"], default: "active" },
+    discountType: { type: String, enum: ["percentage", "flat"], default: "percentage" },
+    discountValue: { type: Number, default: 0, min: 0 },
+    discountActive: { type: Boolean, default: false },
   },
   { timestamps: { createdAt: true, updatedAt: false } }
 )

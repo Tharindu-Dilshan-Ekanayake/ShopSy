@@ -4,6 +4,8 @@ interface SaleLineItem {
   item: Types.ObjectId
   name: string
   qty: number
+  unit: string
+  unitSize: number
   price: number
   subtotal: number
 }
@@ -25,7 +27,9 @@ const SaleSchema = new Schema<ISale>(
       {
         item: { type: Schema.Types.ObjectId, ref: "Item", required: true },
         name: { type: String, required: true },
-        qty: { type: Number, required: true, min: 1 },
+        qty: { type: Number, required: true, min: 0.001 },
+        unit: { type: String, default: "pcs" },
+        unitSize: { type: Number, default: 1 },
         price: { type: Number, required: true, min: 0 },
         subtotal: { type: Number, required: true, min: 0 },
       },

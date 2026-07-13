@@ -4,11 +4,17 @@ import Image from "next/image"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Printer, X } from "lucide-react"
+import { effectivePrice, formatUnitLabel, type ItemUnit, type DiscountType } from "@/lib/pricing"
 
 interface Item {
   _id: string
   name: { en: string; si: string }
   price: number
+  unit: ItemUnit
+  unitSize: number
+  discountType: DiscountType
+  discountValue: number
+  discountActive: boolean
   barcode: string
   barcodeImageUrl?: string
 }
@@ -54,7 +60,18 @@ export default function BarcodePrintDialog({ item, onClose }: Props) {
           )}
 
           <p className="font-mono text-xs tracking-widest">{item.barcode}</p>
-          <p className="font-bold text-base">Rs. {item.price.toLocaleString()}</p>
+          {item.discountActive && item.discountValue > 0 ? (
+            <p className="font-bold text-base">
+              Rs. {effectivePrice(item).toLocaleString()}
+              <span className="text-xs font-normal text-gray-400 line-through ml-1">Rs. {item.price.toLocaleString()}</span>
+              <span className="text-xs font-normal text-gray-500">/{formatUnitLabel(item.unitSize, item.unit || "pcs")}</span>
+            </p>
+          ) : (
+            <p className="font-bold text-base">
+              Rs. {item.price.toLocaleString()}
+              <span className="text-xs font-normal text-gray-500">/{formatUnitLabel(item.unitSize, item.unit || "pcs")}</span>
+            </p>
+          )}
         </div>
 
         <p className="text-xs text-center text-muted-foreground">
