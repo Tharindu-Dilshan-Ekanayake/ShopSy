@@ -16,7 +16,7 @@ export async function GET() {
   if (error) return error
 
   await connectDB()
-  const users = await User.find().select("-passwordHash").sort({ createdAt: -1 })
+  const users = await User.find().select("-passwordHash").sort({ createdAt: -1 }).lean()
   return Response.json(users)
 }
 

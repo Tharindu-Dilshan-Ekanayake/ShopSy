@@ -3,6 +3,7 @@ import { connectDB } from "@/lib/db"
 import { Item } from "@/models/Item"
 import { Sale } from "@/models/Sale"
 import { Notification } from "@/models/Notification"
+import "@/models/User" // registers the User schema so .populate("cashier") never throws MissingSchemaError on a cold start
 import { requireApiSession } from "@/lib/dal"
 import { z } from "zod"
 

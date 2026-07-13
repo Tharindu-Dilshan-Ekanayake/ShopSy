@@ -47,8 +47,8 @@ const ItemSchema = new Schema<IItem>(
   { timestamps: { createdAt: true, updatedAt: false } }
 )
 
-ItemSchema.index({ barcode: 1 })
+// barcode already has a unique index via the schema field definition above
 ItemSchema.index({ category: 1 })
-ItemSchema.index({ status: 1 })
+ItemSchema.index({ status: 1, createdAt: -1 })
 
 export const Item = models.Item ?? model<IItem>("Item", ItemSchema)

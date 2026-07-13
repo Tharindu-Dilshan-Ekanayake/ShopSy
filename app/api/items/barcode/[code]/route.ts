@@ -8,7 +8,7 @@ export async function GET(_req: Request, ctx: RouteContext<"/api/items/barcode/[
 
   const { code } = await ctx.params
   await connectDB()
-  const item = await Item.findOne({ barcode: code, status: "active" }).populate("category", "name")
+  const item = await Item.findOne({ barcode: code, status: "active" }, "-imagePublicId -barcodeImagePublicId").lean()
   if (!item) return Response.json({ error: "Item not found" }, { status: 404 })
   return Response.json(item)
 }

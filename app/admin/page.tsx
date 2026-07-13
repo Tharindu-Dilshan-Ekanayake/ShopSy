@@ -3,6 +3,7 @@ import { connectDB } from "@/lib/db"
 import { Sale } from "@/models/Sale"
 import { Item } from "@/models/Item"
 import { Notification } from "@/models/Notification"
+import "@/models/Category" // registers the Category schema so .populate("category") never throws MissingSchemaError on a cold start
 import { verifyAdmin } from "@/lib/dal"
 import { TrendingUp, Package, Bell, ShoppingBag } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"

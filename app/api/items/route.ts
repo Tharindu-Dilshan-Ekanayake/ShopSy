@@ -1,5 +1,6 @@
 import { connectDB } from "@/lib/db"
 import { Item } from "@/models/Item"
+import "@/models/Category" // registers the Category schema so .populate("category") never throws MissingSchemaError on a cold start
 import { requireApiAdmin, requireApiSession } from "@/lib/dal"
 import { uploadImage } from "@/lib/cloudinary"
 import { generateBarcodeImage } from "@/lib/barcode"
@@ -15,6 +16,7 @@ export async function GET(req: Request) {
   const category = searchParams.get("category") || ""
   const status = searchParams.get("status") || "active"
   const publicView = searchParams.get("public") === "1"
+  const withCategory = searchParams.get("populate") !== "0"
 
   await connectDB()
 
@@ -31,8 +33,14 @@ export async function GET(req: Request) {
     filter.status = "active"
   }
 
+  let query = Item.find(filter, "-imagePublicId -barcodeImagePublicId")
+    .sort({ createdAt: -1 })
+    .skip((page - 1) * limit)
+    .limit(limit)
+  if (withCategory) query = query.populate("category", "name slug")
+
   const [items, total] = await Promise.all([
-    Item.find(filter).populate("category", "name slug").sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit),
+    query.lean(),
     Item.countDocuments(filter),
   ])
 

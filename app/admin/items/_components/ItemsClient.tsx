@@ -15,6 +15,7 @@ import { Plus, Pencil, Trash2, Search, RefreshCw, ImageOff, Printer, ChevronLeft
 import { toast } from "sonner"
 import BarcodePrintDialog from "./BarcodePrintDialog"
 import { effectivePrice, formatUnitLabel, type ItemUnit, type DiscountType } from "@/lib/pricing"
+import { cloudinaryThumb } from "@/lib/cloudinaryUrl"
 
 interface Category { _id: string; name: { en: string } }
 interface Item {
@@ -76,6 +77,8 @@ export default function ItemsClient() {
       setItems(d.items)
       setPages(d.pages)
       setTotal(d.total ?? d.items.length)
+    } else {
+      toast.error("Couldn't load items — check your connection and try again")
     }
     setLoading(false)
   }
@@ -266,7 +269,7 @@ export default function ItemsClient() {
                     <td className="px-3 py-2.5">
                       <div className="size-9 rounded-lg overflow-hidden border bg-muted shrink-0 flex items-center justify-center">
                         {item.imageUrl
-                          ? <Image src={item.imageUrl} alt={item.name.en} width={36} height={36} className="object-cover w-full h-full" />
+                          ? <Image src={cloudinaryThumb(item.imageUrl, 72)!} alt={item.name.en} width={36} height={36} className="object-cover w-full h-full" />
                           : <ImageOff className="size-4 text-muted-foreground/30" />}
                       </div>
                     </td>

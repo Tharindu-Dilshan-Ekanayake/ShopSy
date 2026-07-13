@@ -1,5 +1,6 @@
 import { connectDB } from "@/lib/db"
 import { Item } from "@/models/Item"
+import "@/models/Category" // registers the Category schema so .populate("category") never throws MissingSchemaError on a cold start
 import { requireApiAdmin, requireApiSession } from "@/lib/dal"
 import { uploadImage, deleteImage } from "@/lib/cloudinary"
 import { generateBarcodeImage } from "@/lib/barcode"
