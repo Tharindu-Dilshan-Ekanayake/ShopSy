@@ -254,7 +254,7 @@ function ProductGridCard({ item, onAdd }: { item: Item; onAdd: () => void }) {
             src={cloudinaryThumb(item.imageUrl, 240)!}
             alt={item.name.en}
             fill
-            sizes="(min-width: 1536px) 180px, (min-width: 1280px) 200px, 33vw"
+            sizes="160px"
             className="object-cover group-hover:scale-105 transition-transform duration-300"
           />
         ) : (
@@ -274,9 +274,9 @@ function ProductGridCard({ item, onAdd }: { item: Item; onAdd: () => void }) {
         )}
       </div>
       <div className="p-2.5 space-y-0.5">
-        <p className="text-xs font-semibold leading-tight line-clamp-2 min-h-8">{item.name.en}</p>
+            <p className="text-[12px] font-semibold leading-tight line-clamp-2 min-h-7">{item.name.en}</p>
         <div className="flex items-baseline gap-1 flex-wrap">
-          <span className="text-sm font-bold text-primary">Rs.{price.toLocaleString()}</span>
+              <span className="text-sm font-bold text-primary">Rs.{price.toLocaleString()}</span>
           {item.discountActive && item.discountValue > 0 && (
             <span className="text-[10px] text-muted-foreground line-through">Rs.{item.price.toLocaleString()}</span>
           )}
@@ -389,6 +389,8 @@ export default function BillScreen({
   cashierId: string
   cashierName: string
 }) {
+  const [filterText, setFilterText] = useState("")
+  const [mobilePanelOpen, setMobilePanelOpen] = useState(false)
   const [cart, setCart] = useState<CartItem[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [searchResults, setSearchResults] = useState<Item[]>([])
@@ -407,6 +409,10 @@ export default function BillScreen({
   const searchRef = useRef<HTMLInputElement>(null)
 
   const cartTotal = cart.reduce((s, i) => s + unitPrice(i) * i.qty, 0)
+
+  const filteredBrowseItems = browseItems.filter((it) =>
+    it.name.en.toLowerCase().includes(filterText.trim().toLowerCase()),
+  )
   const discountAmt = Number(discount) || 0
   const grandTotal = Math.max(0, cartTotal - discountAmt)
 
@@ -456,7 +462,7 @@ export default function BillScreen({
     setBrowseLoading(false)
   }
 
-  useEffect(() => { loadBrowse(1) }, [])
+  useEffect(() => { queueMicrotask(() => loadBrowse(1)) }, [])
 
   const searchAbortRef = useRef<AbortController | null>(null)
   const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -576,6 +582,17 @@ export default function BillScreen({
               </button>
             )}
           </div>
+          {/* Mobile items panel toggle (mobile only) */}
+          <button
+            type="button"
+            onClick={() => setMobilePanelOpen((v) => !v)}
+            aria-label="Toggle items panel"
+            title="Items"
+            className="h-11 w-11 shrink-0 rounded-xl flex items-center justify-center bg-muted text-muted-foreground hover:bg-muted/90 active:scale-95 transition-all shadow-sm lg:hidden"
+          >
+            <ChevronRight className={`size-5 transition-transform ${mobilePanelOpen ? "rotate-180" : ""}`} />
+          </button>
+
           {/* Scan button — optional shortcut, kept small */}
           <button
             type="button"
@@ -671,9 +688,17 @@ export default function BillScreen({
       <div className="flex-1 min-w-0 overflow-hidden flex">
         {/* ── Product grid — browsable catalog, desktop only (mobile stays search+cart) ── */}
         <div className="hidden lg:flex flex-col flex-1 min-w-0 border-r overflow-hidden">
+          <div className="px-3 pt-3 pb-2">
+            <Input
+              value={filterText}
+              onChange={(e) => setFilterText(e.target.value)}
+              placeholder="Filter items..."
+              className="h-9 rounded-lg text-sm"
+            />
+          </div>
           <ScrollArea className="flex-1">
             {browseLoading && browseItems.length === 0 ? (
-              <div className="grid grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3 p-4">
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(130px,1fr))] gap-3 p-4">
                 {Array.from({ length: 12 }).map((_, i) => (
                   <div key={i} className="rounded-2xl border overflow-hidden">
                     <div className="aspect-square bg-muted animate-pulse" />
@@ -684,14 +709,14 @@ export default function BillScreen({
                   </div>
                 ))}
               </div>
-            ) : browseItems.length === 0 ? (
+            ) : filteredBrowseItems.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full min-h-[50vh] gap-3 text-muted-foreground px-8">
                 <Package className="size-10 opacity-30" />
                 <p className="text-sm font-medium text-foreground">No products yet</p>
               </div>
             ) : (
-              <div className="grid grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3 p-4">
-                {browseItems.map((item) => (
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(130px,1fr))] gap-3 p-4">
+                {filteredBrowseItems.map((item) => (
                   <ProductGridCard key={item._id} item={item} onAdd={() => addToCart(item)} />
                 ))}
               </div>
@@ -726,6 +751,50 @@ export default function BillScreen({
       </div>
 
       {/* ── Barcode Scanner ── */}
+      {/* Mobile sliding items panel + overlay */}
+      {mobilePanelOpen && (
+        <div className="fixed inset-0 z-30">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setMobilePanelOpen(false)} />
+          <div className="absolute left-0 top-0 bottom-0 w-3/4 max-w-xs bg-card z-40 transform transition-transform duration-300 shadow-lg">
+            <div className="p-3 flex items-center justify-between border-b">
+              <p className="font-semibold">Items</p>
+              <button type="button" className="size-9 rounded-lg flex items-center justify-center text-muted-foreground" onClick={() => setMobilePanelOpen(false)}>
+                <ChevronLeft className="size-5" />
+              </button>
+            </div>
+            <div className="p-2 overflow-y-auto h-full">
+              <div className="mb-2">
+                <Input value={filterText} onChange={(e) => setFilterText(e.target.value)} placeholder="Filter items..." className="h-9 rounded-lg text-sm" />
+              </div>
+              <div className="space-y-2">
+                {filteredBrowseItems.length === 0 ? (
+                  <div className="text-sm text-muted-foreground px-3">No items</div>
+                ) : (
+                  filteredBrowseItems.map((it) => (
+                    <button key={it._id} type="button" onClick={() => { addToCart(it); setMobilePanelOpen(false) }} className="w-full flex items-center gap-3 p-2 rounded-md hover:bg-muted/5">
+                      {it.imageUrl ? (
+                        <Image src={cloudinaryThumb(it.imageUrl, 88)!} alt={it.name.en} width={44} height={44} className="rounded-md object-cover" />
+                      ) : (
+                        <div className="w-11 h-11 rounded-md bg-muted flex items-center justify-center">
+                          <Package className="size-5 text-muted-foreground/40" />
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0 text-left">
+                        <p className="font-medium text-sm truncate">{it.name.en}</p>
+                        <p className="text-xs text-muted-foreground">Rs. {effectivePrice(it).toLocaleString()}</p>
+                      </div>
+                      <div className="size-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+                        <Plus className="size-4" />
+                      </div>
+                    </button>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <BarcodeScanner open={scanning} onClose={() => setScanning(false)} onScan={handleBarcodeScan} />
 
       {/* ── Checkout Sheet (slides up from bottom — native feel on mobile) ── */}
