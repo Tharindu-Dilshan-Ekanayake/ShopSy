@@ -5,17 +5,22 @@ import { loginAction } from "@/app/actions/auth"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Mail, Lock, Eye, EyeOff, ArrowRight, AlertCircle } from "lucide-react"
+import { Mail, Lock, Eye, EyeOff, ArrowRight, AlertCircle, ShieldCheck } from "lucide-react"
 
 export default function LoginForm() {
   const [state, action, pending] = useActionState(loginAction, undefined)
   const [showPassword, setShowPassword] = useState(false)
 
   return (
-    <div className="rounded-2xl border border-border/60 bg-card/90 backdrop-blur-sm shadow-xl shadow-primary/5 p-6 sm:p-8">
-      <div className="mb-6">
-        <h2 className="text-lg font-semibold">Welcome back</h2>
-        <p className="text-sm text-muted-foreground mt-1">Enter your credentials to continue</p>
+    <div className="rounded-3xl border border-border/60 bg-card/90 backdrop-blur-sm shadow-xl shadow-primary/5 p-6 sm:p-8">
+      <div className="mb-6 flex items-center gap-3">
+        <div className="hidden sm:flex size-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary ring-1 ring-primary/15">
+          <ShieldCheck className="size-5" />
+        </div>
+        <div>
+          <h2 className="text-lg font-semibold">Welcome back</h2>
+          <p className="text-sm text-muted-foreground mt-0.5">Enter your credentials to continue</p>
+        </div>
       </div>
 
       <form action={action} className="space-y-4">
@@ -30,7 +35,7 @@ export default function LoginForm() {
               placeholder="you@example.com"
               autoComplete="email"
               required
-              className="h-11 pl-9"
+              className="h-11 rounded-xl pl-9"
             />
           </div>
         </div>
@@ -46,7 +51,7 @@ export default function LoginForm() {
               placeholder="••••••••"
               autoComplete="current-password"
               required
-              className="h-11 pl-9 pr-9"
+              className="h-11 rounded-xl pl-9 pr-9"
             />
             <button
               type="button"
@@ -61,16 +66,21 @@ export default function LoginForm() {
         </div>
 
         {state?.error && (
-          <p className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 px-3 py-2 rounded-lg">
+          <p className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 px-3 py-2.5 rounded-xl animate-fade-in-up">
             <AlertCircle className="size-4 shrink-0" />
             {state.error}
           </p>
         )}
 
-        <Button type="submit" className="w-full h-11 gap-2" disabled={pending}>
+        <Button
+          type="submit"
+          className="group w-full h-11 gap-2 rounded-xl shadow-lg shadow-primary/20"
+          disabled={pending}
+        >
           {pending ? "Signing in…" : (
             <>
-              Sign In <ArrowRight className="size-4" />
+              Sign In
+              <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
             </>
           )}
         </Button>

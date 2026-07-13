@@ -10,9 +10,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Plus, Pencil, Trash2, Search, RefreshCw, ImageOff, Printer, ChevronLeft, ChevronRight } from "lucide-react"
+import { Switch } from "@/components/ui/switch"
+import { Plus, Pencil, Trash2, Search, RefreshCw, ImageOff, Printer, ChevronLeft, ChevronRight, Tag } from "lucide-react"
 import { toast } from "sonner"
 import BarcodePrintDialog from "./BarcodePrintDialog"
+import { effectivePrice, formatUnitLabel, type ItemUnit, type DiscountType } from "@/lib/pricing"
 
 interface Category { _id: string; name: { en: string } }
 interface Item {
@@ -20,6 +22,8 @@ interface Item {
   name: { en: string; si: string }
   category: Category | null
   price: number
+  unit: ItemUnit
+  unitSize: number
   costPrice: number
   stockQty: number
   lowStockThreshold: number
@@ -27,12 +31,16 @@ interface Item {
   imageUrl?: string
   barcodeImageUrl?: string
   status: string
+  discountType: DiscountType
+  discountValue: number
+  discountActive: boolean
   createdAt: string
 }
 
 const emptyForm = () => ({
-  nameEn: "", nameSi: "", category: "", price: "", costPrice: "",
+  nameEn: "", nameSi: "", category: "", price: "", unit: "pcs" as ItemUnit, unitSize: "1", costPrice: "",
   stockQty: "0", lowStockThreshold: "5", barcode: "", status: "active",
+  discountType: "percentage" as DiscountType, discountValue: "0", discountActive: false,
   image: null as File | null,
 })
 
@@ -84,9 +92,13 @@ export default function ItemsClient() {
     setForm({
       nameEn: item.name.en, nameSi: item.name.si,
       category: item.category?._id || "",
-      price: String(item.price), costPrice: String(item.costPrice),
+      price: String(item.price), unit: item.unit || "pcs", unitSize: String(item.unitSize || 1), costPrice: String(item.costPrice),
       stockQty: String(item.stockQty), lowStockThreshold: String(item.lowStockThreshold),
-      barcode: item.barcode, status: item.status, image: null,
+      barcode: item.barcode, status: item.status,
+      discountType: item.discountType || "percentage",
+      discountValue: String(item.discountValue || 0),
+      discountActive: !!item.discountActive,
+      image: null,
     })
     setPreviewUrl(item.imageUrl || null)
     setDialogOpen(true)
@@ -110,11 +122,16 @@ export default function ItemsClient() {
     fd.append("name.si", form.nameSi)
     fd.append("category", form.category)
     fd.append("price", form.price)
+    fd.append("unit", form.unit)
+    fd.append("unitSize", form.unitSize)
     fd.append("costPrice", form.costPrice)
     fd.append("stockQty", form.stockQty)
     fd.append("lowStockThreshold", form.lowStockThreshold)
     fd.append("barcode", form.barcode)
     fd.append("status", form.status)
+    fd.append("discountType", form.discountType)
+    fd.append("discountValue", form.discountValue)
+    fd.append("discountActive", String(form.discountActive))
     if (form.image) fd.append("image", form.image)
     const url = editing ? `/api/items/${editing._id}` : "/api/items"
     const method = editing ? "PATCH" : "POST"
@@ -167,7 +184,11 @@ export default function ItemsClient() {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <Select value={catFilter} onValueChange={(v) => setCatFilter(v ?? "all")}>
+        <Select
+          items={[{ label: "All Categories", value: "all" }, ...categories.map((c) => ({ label: c.name.en, value: c._id }))]}
+          value={catFilter}
+          onValueChange={(v) => setCatFilter(v ?? "all")}
+        >
           <SelectTrigger className="w-44">
             <SelectValue placeholder="All Categories" />
           </SelectTrigger>
@@ -178,7 +199,11 @@ export default function ItemsClient() {
             ))}
           </SelectContent>
         </Select>
-        <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v ?? "all")}>
+        <Select
+          items={[{ label: "All Status", value: "all" }, { label: "Active", value: "active" }, { label: "Discontinued", value: "discontinued" }]}
+          value={statusFilter}
+          onValueChange={(v) => setStatusFilter(v ?? "all")}
+        >
           <SelectTrigger className="w-36">
             <SelectValue placeholder="All Status" />
           </SelectTrigger>
@@ -259,7 +284,20 @@ export default function ItemsClient() {
 
                     {/* Price */}
                     <td className="px-3 py-2.5 text-right">
-                      <p className="font-semibold">Rs.{item.price.toLocaleString()}</p>
+                      {item.discountActive && item.discountValue > 0 ? (
+                        <>
+                          <p className="text-xs text-muted-foreground line-through">Rs.{item.price.toLocaleString()}</p>
+                          <p className="font-semibold text-primary">
+                            Rs.{effectivePrice(item).toLocaleString()}
+                            <span className="text-xs font-normal text-muted-foreground">/{formatUnitLabel(item.unitSize, item.unit || "pcs")}</span>
+                          </p>
+                        </>
+                      ) : (
+                        <p className="font-semibold">
+                          Rs.{item.price.toLocaleString()}
+                          <span className="text-xs font-normal text-muted-foreground">/{formatUnitLabel(item.unitSize, item.unit || "pcs")}</span>
+                        </p>
+                      )}
                       <p className="text-xs text-muted-foreground">cost Rs.{item.costPrice.toLocaleString()}</p>
                     </td>
 
@@ -408,7 +446,11 @@ export default function ItemsClient() {
 
             <div className="space-y-1.5">
               <Label>Category *</Label>
-              <Select value={form.category} onValueChange={(v) => setForm((f) => ({ ...f, category: v ?? "" }))}>
+              <Select
+                items={categories.map((c) => ({ label: c.name.en, value: c._id }))}
+                value={form.category}
+                onValueChange={(v) => setForm((f) => ({ ...f, category: v ?? "" }))}
+              >
                 <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
                 <SelectContent>
                   {categories.map((c) => <SelectItem key={c._id} value={c._id}>{c.name.en}</SelectItem>)}
@@ -422,6 +464,49 @@ export default function ItemsClient() {
                 <Input type="number" min="0" value={form.price} onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))} />
               </div>
               <div className="space-y-1.5">
+                <Label>Priced Per</Label>
+                <div className="flex gap-1.5">
+                  {form.unit !== "pcs" && (
+                    <Input
+                      type="number" min="0.001" step="any"
+                      value={form.unitSize}
+                      onChange={(e) => setForm((f) => ({ ...f, unitSize: e.target.value }))}
+                      placeholder="100"
+                      className="w-16 shrink-0"
+                    />
+                  )}
+                  <Select
+                    items={[
+                      { label: "Piece (pcs)", value: "pcs" },
+                      { label: "Gram (g)", value: "g" },
+                      { label: "Kilogram (kg)", value: "kg" },
+                      { label: "Milliliter (ml)", value: "ml" },
+                      { label: "Liter (L)", value: "l" },
+                    ]}
+                    value={form.unit}
+                    onValueChange={(v) => setForm((f) => ({
+                      ...f,
+                      unit: (v as ItemUnit) ?? "pcs",
+                      unitSize: v === "pcs" ? "1" : f.unitSize,
+                    }))}
+                  >
+                    <SelectTrigger className="flex-1"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pcs">Piece (pcs)</SelectItem>
+                      <SelectItem value="g">Gram (g)</SelectItem>
+                      <SelectItem value="kg">Kilogram (kg)</SelectItem>
+                      <SelectItem value="ml">Milliliter (ml)</SelectItem>
+                      <SelectItem value="l">Liter (L)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                {form.unit !== "pcs" && (
+                  <p className="text-xs text-muted-foreground">
+                    e.g. {form.unitSize || "100"}{form.unit} for Rs.{form.price || "0"}
+                  </p>
+                )}
+              </div>
+              <div className="space-y-1.5">
                 <Label>Cost Price (Rs.) *</Label>
                 <Input type="number" min="0" value={form.costPrice} onChange={(e) => setForm((f) => ({ ...f, costPrice: e.target.value }))} />
               </div>
@@ -433,6 +518,57 @@ export default function ItemsClient() {
                 <Label>Low Stock Alert</Label>
                 <Input type="number" min="0" value={form.lowStockThreshold} onChange={(e) => setForm((f) => ({ ...f, lowStockThreshold: e.target.value }))} />
               </div>
+            </div>
+
+            {/* Discount */}
+            <div className="rounded-xl border p-3 space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="flex items-center gap-1.5">
+                  <Tag className="size-3.5 text-muted-foreground" /> Discount
+                </Label>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground">{form.discountActive ? "On" : "Off"}</span>
+                  <Switch
+                    checked={form.discountActive}
+                    onCheckedChange={(v) => setForm((f) => ({ ...f, discountActive: v }))}
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Type</Label>
+                  <Select
+                    items={[{ label: "Percentage (%)", value: "percentage" }, { label: "Flat (Rs.)", value: "flat" }]}
+                    value={form.discountType}
+                    onValueChange={(v) => setForm((f) => ({ ...f, discountType: (v as DiscountType) ?? "percentage" }))}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="percentage">Percentage (%)</SelectItem>
+                      <SelectItem value="flat">Flat (Rs.)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">
+                    Value {form.discountType === "percentage" ? "(%)" : "(Rs.)"}
+                  </Label>
+                  <Input
+                    type="number" min="0"
+                    value={form.discountValue}
+                    onChange={(e) => setForm((f) => ({ ...f, discountValue: e.target.value }))}
+                  />
+                </div>
+              </div>
+              {form.discountActive && Number(form.discountValue) > 0 && Number(form.price) > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  Sells at{" "}
+                  <span className="font-semibold text-primary">
+                    Rs.{effectivePrice({ price: Number(form.price), discountActive: true, discountType: form.discountType, discountValue: Number(form.discountValue) }).toLocaleString()}
+                  </span>
+                  /{formatUnitLabel(Number(form.unitSize), form.unit)} (was Rs.{Number(form.price).toLocaleString()})
+                </p>
+              )}
             </div>
 
             <div className="space-y-1.5">
@@ -452,7 +588,11 @@ export default function ItemsClient() {
 
             <div className="space-y-1.5">
               <Label>Status</Label>
-              <Select value={form.status} onValueChange={(v) => setForm((f) => ({ ...f, status: v ?? "active" }))}>
+              <Select
+                items={[{ label: "Active", value: "active" }, { label: "Discontinued", value: "discontinued" }]}
+                value={form.status}
+                onValueChange={(v) => setForm((f) => ({ ...f, status: v ?? "active" }))}
+              >
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="active">Active</SelectItem>

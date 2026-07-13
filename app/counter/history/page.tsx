@@ -5,12 +5,14 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import Link from "next/link"
 import { ChevronLeft, ChevronRight, Receipt } from "lucide-react"
+import { formatQty } from "@/lib/pricing"
 
 export const metadata = { title: "Bill History" }
 
 interface SaleItem {
   name: string
   qty: number
+  unit?: string
   price: number
   subtotal: number
 }
@@ -80,7 +82,7 @@ export default async function HistoryPage({ searchParams }: PageProps) {
                     </p>
                     <div className="text-xs text-muted-foreground">
                       {sale.items.map((item, i) => (
-                        <span key={i} className="inline-block mr-3">{item.name} ×{item.qty}</span>
+                        <span key={i} className="inline-block mr-3">{item.name} ×{formatQty(item.qty, item.unit || "pcs")}</span>
                       ))}
                     </div>
                   </div>

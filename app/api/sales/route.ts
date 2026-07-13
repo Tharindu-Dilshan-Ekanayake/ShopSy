@@ -9,7 +9,9 @@ import { z } from "zod"
 const LineItemSchema = z.object({
   itemId: z.string(),
   name: z.string(),
-  qty: z.number().int().positive(),
+  qty: z.number().positive(),
+  unit: z.string().default("pcs"),
+  unitSize: z.number().positive().default(1),
   price: z.number().positive(),
 })
 
@@ -102,7 +104,7 @@ export async function POST(req: Request) {
 
   const sale = await Sale.create({
     billNumber,
-    items: subtotals.map((l) => ({ item: l.itemId, name: l.name, qty: l.qty, price: l.price, subtotal: l.subtotal })),
+    items: subtotals.map((l) => ({ item: l.itemId, name: l.name, qty: l.qty, unit: l.unit, unitSize: l.unitSize, price: l.price, subtotal: l.subtotal })),
     total,
     discount,
     paymentMethod,

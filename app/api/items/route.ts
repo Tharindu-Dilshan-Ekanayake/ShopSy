@@ -47,11 +47,16 @@ export async function POST(req: Request) {
   const name = { en: formData.get("name.en") as string, si: formData.get("name.si") as string }
   const category = formData.get("category") as string
   const price = Number(formData.get("price"))
+  const unit = (formData.get("unit") as string) || "pcs"
+  const unitSize = Number(formData.get("unitSize") || 1)
   const costPrice = Number(formData.get("costPrice"))
   const stockQty = Number(formData.get("stockQty") || 0)
   const lowStockThreshold = Number(formData.get("lowStockThreshold") || 5)
   const barcode = (formData.get("barcode") as string) || `BC${Date.now().toString(36).toUpperCase()}`
   const status = (formData.get("status") as string) || "active"
+  const discountType = (formData.get("discountType") as string) || "percentage"
+  const discountValue = Number(formData.get("discountValue") || 0)
+  const discountActive = formData.get("discountActive") === "true"
   const imageFile = formData.get("image") as File | null
 
   if (!name.en || !name.si || !category || !price || !costPrice) {
@@ -72,7 +77,7 @@ export async function POST(req: Request) {
 
   await connectDB()
   try {
-    const item = await Item.create({ name, category, price, costPrice, stockQty, lowStockThreshold, barcode, imageUrl, imagePublicId, barcodeImageUrl, barcodeImagePublicId, status })
+    const item = await Item.create({ name, category, price, unit, unitSize, costPrice, stockQty, lowStockThreshold, barcode, imageUrl, imagePublicId, barcodeImageUrl, barcodeImagePublicId, status, discountType, discountValue, discountActive })
     return Response.json(item, { status: 201 })
   } catch (e: unknown) {
     if ((e as { code?: number }).code === 11000) return Response.json({ error: "Barcode already exists" }, { status: 409 })

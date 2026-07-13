@@ -10,6 +10,7 @@ import { ImageOff, Search, Sparkles, Layers, ChevronLeft, ChevronRight } from "l
 import LocaleToggle from "./_components/LocaleToggle"
 import BG from "../../assests/BG.webp"
 import BrandLogo from "../../components/BrandLogo"
+import { effectivePrice, formatUnitLabel, type ItemUnit, type DiscountType } from "@/lib/pricing"
 
 export const metadata: Metadata = { title: "Store" }
 
@@ -21,6 +22,11 @@ interface ItemDoc {
   _id: string
   name: { en: string; si: string }
   price: number
+  unit: ItemUnit
+  unitSize: number
+  discountType: DiscountType
+  discountValue: number
+  discountActive: boolean
   stockQty: number
   imageUrl?: string
   category?: { _id: string; name: { en: string; si: string } }
@@ -195,10 +201,24 @@ export default async function StorePage({ searchParams }: PageProps) {
                   {item.category && (
                     <p className="text-xs text-muted-foreground">{item.category.name[locale]}</p>
                   )}
-                  <div className="flex items-center justify-between pt-1.5">
-                    <span className="text-base font-bold text-primary">Rs. {item.price.toLocaleString()}</span>
+                  <div className="flex items-center justify-between pt-1.5 gap-1">
+                    <div className="min-w-0">
+                      {item.discountActive && item.discountValue > 0 ? (
+                        <div className="flex items-baseline gap-1.5 flex-wrap">
+                          <span className="text-base font-bold text-primary">
+                            Rs. {effectivePrice(item).toLocaleString()}
+                          </span>
+                          <span className="text-xs text-muted-foreground line-through">
+                            Rs. {item.price.toLocaleString()}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-base font-bold text-primary">Rs. {item.price.toLocaleString()}</span>
+                      )}
+                      <span className="text-xs text-muted-foreground">/{formatUnitLabel(item.unitSize, item.unit || "pcs")}</span>
+                    </div>
                     {item.stockQty > 0 && (
-                      <Badge variant="secondary" className="text-[10px]">{t.inStock}</Badge>
+                      <Badge variant="secondary" className="text-[10px] shrink-0">{t.inStock}</Badge>
                     )}
                   </div>
                 </div>

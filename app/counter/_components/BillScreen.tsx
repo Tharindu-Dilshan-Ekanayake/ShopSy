@@ -15,11 +15,17 @@ import {
 import { toast } from "sonner"
 import Image from "next/image"
 import BarcodeScanner from "./BarcodeScanner"
+import { effectivePrice, formatQty, formatUnitLabel, UNIT_STEP, type ItemUnit, type DiscountType } from "@/lib/pricing"
 
 interface Item {
   _id: string
   name: { en: string; si: string }
   price: number
+  unit: ItemUnit
+  unitSize: number
+  discountType: DiscountType
+  discountValue: number
+  discountActive: boolean
   stockQty: number
   barcode: string
   imageUrl?: string
@@ -29,32 +35,52 @@ interface CartItem extends Item { qty: number }
 
 interface Sale {
   billNumber: number
-  items: Array<{ name: string; qty: number; price: number; subtotal: number }>
+  items: Array<{ name: string; qty: number; unit?: string; unitSize?: number; price: number; subtotal: number }>
   total: number
   discount: number
   paymentMethod: string
   createdAt: string
 }
 
-/* ─── Qty stepper with large touch targets ─── */
+/* ─── Qty stepper with large touch targets — decimal-aware for weight/volume units ─── */
 function QtyStepper({
-  qty, max, onDec, onInc,
-}: { qty: number; max: number; onDec: () => void; onInc: () => void }) {
+  qty, max, unit, onChange,
+}: { qty: number; max: number; unit: ItemUnit; onChange: (qty: number) => void }) {
+  const step = UNIT_STEP[unit] ?? 1
+  const isPiece = unit === "pcs"
+  const clamp = (v: number) => Math.min(max, Math.max(step, Math.round(v * 1000) / 1000))
+
   return (
     <div className="flex items-center rounded-xl border bg-muted/50 overflow-hidden">
       <button
         type="button"
         aria-label="Decrease quantity"
-        onClick={onDec}
+        onClick={() => onChange(clamp(qty - step))}
         className="flex items-center justify-center size-9 text-muted-foreground hover:text-foreground hover:bg-muted active:bg-muted/80 transition-colors"
       >
         <Minus className="size-3.5" />
       </button>
-      <span className="w-8 text-center text-sm font-bold tabular-nums select-none">{qty}</span>
+      {isPiece ? (
+        <span className="w-8 text-center text-sm font-bold tabular-nums select-none">{qty}</span>
+      ) : (
+        <input
+          type="number"
+          inputMode="decimal"
+          step={step}
+          min={step}
+          max={max}
+          value={qty}
+          onChange={(e) => {
+            const v = Number(e.target.value)
+            if (!Number.isNaN(v) && v > 0) onChange(clamp(v))
+          }}
+          className="w-14 text-center text-sm font-bold tabular-nums bg-transparent outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+        />
+      )}
       <button
         type="button"
         aria-label="Increase quantity"
-        onClick={onInc}
+        onClick={() => onChange(clamp(qty + step))}
         disabled={qty >= max}
         className="flex items-center justify-center size-9 text-muted-foreground hover:text-foreground hover:bg-muted active:bg-muted/80 disabled:opacity-40 transition-colors"
       >
@@ -70,7 +96,7 @@ function CartPanel({
 }: {
   cart: CartItem[]
   cartTotal: number
-  onUpdateQty: (id: string, delta: number) => void
+  onUpdateQty: (id: string, qty: number) => void
   onRemove: (id: string) => void
   onClear: () => void
   onCheckout: () => void
@@ -155,15 +181,15 @@ function CartPanel({
                     <QtyStepper
                       qty={item.qty}
                       max={item.stockQty}
-                      onDec={() => onUpdateQty(item._id, -1)}
-                      onInc={() => onUpdateQty(item._id, 1)}
+                      unit={item.unit || "pcs"}
+                      onChange={(qty) => onUpdateQty(item._id, qty)}
                     />
                     <div className="text-right">
                       <p className="text-xs text-muted-foreground">
-                        Rs.{item.price.toLocaleString()} × {item.qty}
+                        Rs.{effectivePrice(item).toLocaleString()}/{formatUnitLabel(item.unitSize, item.unit || "pcs")} × {formatQty(item.qty, item.unit || "pcs")}
                       </p>
                       <p className="text-sm font-bold text-primary">
-                        Rs.{(item.price * item.qty).toLocaleString()}
+                        Rs.{(effectivePrice(item) * item.qty).toLocaleString()}
                       </p>
                     </div>
                   </div>
@@ -253,8 +279,8 @@ function ThermalReceipt({ sale, cashierName }: { sale: Sale; cashierName: string
           <div key={i}>
             <p className="font-medium leading-tight">{item.name}</p>
             <div className="flex justify-between text-gray-500 pl-2 text-[10px]">
-              <span>@ Rs.{item.price.toLocaleString()}</span>
-              <span className="w-7 text-right">{item.qty}</span>
+              <span>@ Rs.{item.price.toLocaleString()}/{formatUnitLabel(item.unitSize, item.unit || "pcs")}</span>
+              <span className="w-10 text-right">{formatQty(item.qty, item.unit || "pcs")}</span>
               <span className="w-20 text-right font-semibold text-black">
                 Rs.{item.subtotal.toLocaleString()}
               </span>
@@ -313,7 +339,7 @@ export default function BillScreen({
   const [completedSale, setCompletedSale] = useState<Sale | null>(null)
   const searchRef = useRef<HTMLInputElement>(null)
 
-  const cartTotal = cart.reduce((s, i) => s + i.price * i.qty, 0)
+  const cartTotal = cart.reduce((s, i) => s + effectivePrice(i) * i.qty, 0)
   const discountAmt = Number(discount) || 0
   const grandTotal = Math.max(0, cartTotal - discountAmt)
 
@@ -333,14 +359,13 @@ export default function BillScreen({
     searchRef.current?.focus()
   }, [])
 
-  const updateQty = (id: string, delta: number) => {
+  const updateQty = (id: string, qty: number) => {
     setCart((prev) =>
       prev.map((i) => {
         if (i._id !== id) return i
-        const newQty = i.qty + delta
-        if (newQty < 1) return i
-        if (newQty > i.stockQty) { toast.error("No more stock available"); return i }
-        return { ...i, qty: newQty }
+        if (qty <= 0) return i
+        if (qty > i.stockQty) { toast.error("No more stock available"); return i }
+        return { ...i, qty }
       }),
     )
   }
@@ -370,7 +395,7 @@ export default function BillScreen({
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        items: cart.map((i) => ({ itemId: i._id, name: i.name.en, qty: i.qty, price: i.price })),
+        items: cart.map((i) => ({ itemId: i._id, name: i.name.en, qty: i.qty, unit: i.unit || "pcs", unitSize: i.unitSize || 1, price: effectivePrice(i) })),
         discount: discountAmt,
         paymentMethod,
       }),
@@ -476,9 +501,21 @@ export default function BillScreen({
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-sm leading-tight truncate">{item.name.en}</p>
                       <div className="flex items-center gap-2 mt-1 flex-wrap">
-                        <span className="text-sm font-bold text-primary">
-                          Rs. {item.price.toLocaleString()}
-                        </span>
+                        {item.discountActive && item.discountValue > 0 ? (
+                          <span className="flex items-baseline gap-1">
+                            <span className="text-sm font-bold text-primary">
+                              Rs. {effectivePrice(item).toLocaleString()}
+                            </span>
+                            <span className="text-xs text-muted-foreground line-through">
+                              Rs. {item.price.toLocaleString()}
+                            </span>
+                          </span>
+                        ) : (
+                          <span className="text-sm font-bold text-primary">
+                            Rs. {item.price.toLocaleString()}
+                          </span>
+                        )}
+                        <span className="text-xs text-muted-foreground">/{formatUnitLabel(item.unitSize, item.unit || "pcs")}</span>
                         <span
                           className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${
                             item.stockQty === 0
@@ -554,9 +591,9 @@ export default function BillScreen({
                   <div key={i._id} className="flex justify-between items-center px-3 py-3 text-sm">
                     <span className="text-muted-foreground flex-1 truncate pr-3">
                       {i.name.en}
-                      <span className="text-xs ml-1 text-muted-foreground/70">× {i.qty}</span>
+                      <span className="text-xs ml-1 text-muted-foreground/70">× {formatQty(i.qty, i.unit || "pcs")}</span>
                     </span>
-                    <span className="font-semibold shrink-0">Rs. {(i.price * i.qty).toLocaleString()}</span>
+                    <span className="font-semibold shrink-0">Rs. {(effectivePrice(i) * i.qty).toLocaleString()}</span>
                   </div>
                 ))}
               </div>

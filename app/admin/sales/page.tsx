@@ -10,12 +10,14 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table"
 import { ChevronLeft, ChevronRight, Receipt, Search } from "lucide-react"
+import { formatQty } from "@/lib/pricing"
 
 export const metadata: Metadata = { title: "Bill History" }
 
 interface SaleItem {
   name: string
   qty: number
+  unit?: string
   price: number
   subtotal: number
 }
@@ -187,7 +189,7 @@ export default async function AdminSalesPage({ searchParams }: PageProps) {
                         {date} <span className="text-xs">{time}</span>
                       </TableCell>
                       <TableCell>{sale.cashier?.name ?? "—"}</TableCell>
-                      <TableCell className="text-muted-foreground" title={sale.items.map((i) => `${i.name} ×${i.qty}`).join(", ")}>
+                      <TableCell className="text-muted-foreground" title={sale.items.map((i) => `${i.name} ×${formatQty(i.qty, i.unit || "pcs")}`).join(", ")}>
                         {itemCount} item{itemCount !== 1 ? "s" : ""}
                       </TableCell>
                       <TableCell>
@@ -231,7 +233,7 @@ export default async function AdminSalesPage({ searchParams }: PageProps) {
                         </p>
                         <div className="text-xs text-muted-foreground">
                           {sale.items.map((item, i) => (
-                            <span key={i} className="inline-block mr-3">{item.name} ×{item.qty}</span>
+                            <span key={i} className="inline-block mr-3">{item.name} ×{formatQty(item.qty, item.unit || "pcs")}</span>
                           ))}
                         </div>
                       </div>
