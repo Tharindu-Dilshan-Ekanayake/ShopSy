@@ -10,7 +10,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/com
 import {
   ScanLine, Search, Plus, Minus, ShoppingCart,
   Printer, CheckCircle2, CreditCard, Banknote, X,
-  Package, ChevronRight, Trash2,
+  Package, ChevronLeft, ChevronRight, Trash2,
 } from "lucide-react"
 import { toast } from "sonner"
 import Image from "next/image"
@@ -109,7 +109,7 @@ function CartPanel({
   const itemCount = cart.reduce((s, i) => s + ((i.unit || "pcs") === "pcs" ? i.qty : 1), 0)
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full ">
       {/* Header */}
       <div className="h-14 flex items-center justify-between px-4 border-b shrink-0 bg-card">
         <div className="flex items-center gap-2">
@@ -237,6 +237,56 @@ function CartPanel({
   )
 }
 
+/* ─── Product grid card — the browsable catalog tile on the left pane (desktop only) ─── */
+function ProductGridCard({ item, onAdd }: { item: Item; onAdd: () => void }) {
+  const price = effectivePrice(item)
+  const outOfStock = item.stockQty <= 0
+  return (
+    <button
+      type="button"
+      onClick={onAdd}
+      disabled={outOfStock}
+      className="group flex flex-col rounded-2xl border bg-card overflow-hidden text-left transition-all hover:border-primary/40 hover:shadow-md disabled:opacity-50 disabled:pointer-events-none"
+    >
+      <div className="aspect-square bg-muted relative overflow-hidden">
+        {item.imageUrl ? (
+          <Image
+            src={cloudinaryThumb(item.imageUrl, 240)!}
+            alt={item.name.en}
+            fill
+            sizes="(min-width: 1536px) 180px, (min-width: 1280px) 200px, 33vw"
+            className="object-cover group-hover:scale-105 transition-transform duration-300"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center">
+            <Package className="size-7 text-muted-foreground/30" />
+          </div>
+        )}
+        {outOfStock && (
+          <div className="absolute inset-0 bg-background/70 backdrop-blur-[1px] flex items-center justify-center">
+            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-destructive/10 text-destructive">Out of stock</span>
+          </div>
+        )}
+        {!outOfStock && (
+          <div className="absolute bottom-1.5 right-1.5 size-7 rounded-lg bg-primary/90 text-primary-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+            <Plus className="size-4" />
+          </div>
+        )}
+      </div>
+      <div className="p-2.5 space-y-0.5">
+        <p className="text-xs font-semibold leading-tight line-clamp-2 min-h-8">{item.name.en}</p>
+        <div className="flex items-baseline gap-1 flex-wrap">
+          <span className="text-sm font-bold text-primary">Rs.{price.toLocaleString()}</span>
+          {item.discountActive && item.discountValue > 0 && (
+            <span className="text-[10px] text-muted-foreground line-through">Rs.{item.price.toLocaleString()}</span>
+          )}
+        </div>
+        <p className="text-[10px] text-muted-foreground">/{formatUnitLabel(item.unitSize, item.unit || "pcs")}</p>
+      </div>
+    </button>
+  )
+}
+
 /* ─── Professional thermal receipt ─── */
 function ThermalReceipt({ sale, cashierName }: { sale: Sale; cashierName: string }) {
   const dt = new Date(sale.createdAt)
@@ -344,6 +394,10 @@ export default function BillScreen({
   const [searchResults, setSearchResults] = useState<Item[]>([])
   const [searchFocused, setSearchFocused] = useState(false)
   const [scanning, setScanning] = useState(false)
+  const [browseItems, setBrowseItems] = useState<Item[]>([])
+  const [browsePage, setBrowsePage] = useState(1)
+  const [browsePages, setBrowsePages] = useState(1)
+  const [browseLoading, setBrowseLoading] = useState(true)
   const [checkoutOpen, setCheckoutOpen] = useState(false)
   const [receiptOpen, setReceiptOpen] = useState(false)
   const [paymentMethod, setPaymentMethod] = useState<"cash" | "card">("cash")
@@ -387,6 +441,22 @@ export default function BillScreen({
   }
 
   const removeFromCart = (id: string) => setCart((prev) => prev.filter((i) => i._id !== id))
+
+  const loadBrowse = async (p = browsePage) => {
+    setBrowseLoading(true)
+    const res = await fetch(`/api/items?status=active&limit=24&page=${p}&populate=0`)
+    if (res.ok) {
+      const d = await res.json()
+      setBrowseItems(d.items)
+      setBrowsePages(d.pages)
+      setBrowsePage(p)
+    } else {
+      toast.error("Couldn't load products — check your connection and try again")
+    }
+    setBrowseLoading(false)
+  }
+
+  useEffect(() => { loadBrowse(1) }, [])
 
   const searchAbortRef = useRef<AbortController | null>(null)
   const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -457,6 +527,7 @@ export default function BillScreen({
     setCheckoutOpen(false)
     setReceiptOpen(true)
     setProcessing(false)
+    loadBrowse(browsePage) // refresh stock counts/out-of-stock state on the grid
   }
 
   const handleNewSale = () => {
@@ -471,7 +542,7 @@ export default function BillScreen({
 
       {/* ── Compact search + scan bar (adding items is a small, optional step) ── */}
       <div className="relative shrink-0 border-b bg-background/95 backdrop-blur-sm z-30">
-        <div className="relative max-w-2xl mx-auto">
+        <div className="relative max-w-xl">
         <div className="px-3 py-2.5 sm:px-4 flex gap-2">
           <div className="relative flex-1">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
@@ -597,17 +668,60 @@ export default function BillScreen({
         </div>
       </div>
 
-      {/* ── Cart — the main event, always front and center ── */}
-      <div className="flex-1 min-w-0 overflow-hidden flex justify-center">
-        <div className="w-full max-w-2xl h-full">
-        <CartPanel
-          cart={cart}
-          cartTotal={cartTotal}
-          onUpdateQty={updateQty}
-          onRemove={removeFromCart}
-          onClear={() => setCart([])}
-          onCheckout={openCheckout}
-        />
+      <div className="flex-1 min-w-0 overflow-hidden flex">
+        {/* ── Product grid — browsable catalog, desktop only (mobile stays search+cart) ── */}
+        <div className="hidden lg:flex flex-col flex-1 min-w-0 border-r overflow-hidden">
+          <ScrollArea className="flex-1">
+            {browseLoading && browseItems.length === 0 ? (
+              <div className="grid grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3 p-4">
+                {Array.from({ length: 12 }).map((_, i) => (
+                  <div key={i} className="rounded-2xl border overflow-hidden">
+                    <div className="aspect-square bg-muted animate-pulse" />
+                    <div className="p-2.5 space-y-1.5">
+                      <div className="h-3 bg-muted rounded animate-pulse" />
+                      <div className="h-3 w-2/3 bg-muted rounded animate-pulse" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : browseItems.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full min-h-[50vh] gap-3 text-muted-foreground px-8">
+                <Package className="size-10 opacity-30" />
+                <p className="text-sm font-medium text-foreground">No products yet</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3 p-4">
+                {browseItems.map((item) => (
+                  <ProductGridCard key={item._id} item={item} onAdd={() => addToCart(item)} />
+                ))}
+              </div>
+            )}
+          </ScrollArea>
+          {browsePages > 1 && (
+            <div className="shrink-0 border-t p-2 flex items-center justify-center gap-2 bg-card">
+              <Button variant="outline" size="icon-sm" disabled={browsePage <= 1} onClick={() => loadBrowse(browsePage - 1)} aria-label="Previous page">
+                <ChevronLeft className="size-4" />
+              </Button>
+              <span className="text-sm text-muted-foreground px-2">{browsePage} / {browsePages}</span>
+              <Button variant="outline" size="icon-sm" disabled={browsePage >= browsePages} onClick={() => loadBrowse(browsePage + 1)} aria-label="Next page">
+                <ChevronRight className="size-4" />
+              </Button>
+            </div>
+          )}
+        </div>
+
+        {/* ── Cart — full width on mobile, fixed sidebar on desktop ── */}
+        <div className="w-full lg:w-[400px] lg:shrink-0 overflow-hidden flex justify-center">
+          <div className="w-full max-w-2xl lg:max-w-none h-full">
+            <CartPanel
+              cart={cart}
+              cartTotal={cartTotal}
+              onUpdateQty={updateQty}
+              onRemove={removeFromCart}
+              onClear={() => setCart([])}
+              onCheckout={openCheckout}
+            />
+          </div>
         </div>
       </div>
 
