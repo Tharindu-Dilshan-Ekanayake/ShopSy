@@ -30,6 +30,16 @@ export function effectivePrice(item: Discountable): number {
   return Math.max(0, item.price - off)
 }
 
+/**
+ * Price per single base unit (1g, 1ml, 1kg, 1L, or 1 pc), derived from the listed
+ * pack price. E.g. price=100 for unitSize=100 (ml) -> Rs.1 per ml, so a manually
+ * entered qty of 250 (ml) correctly totals Rs.250 instead of 250x the pack price.
+ */
+export function unitPrice(item: Discountable & { unitSize?: number }): number {
+  const size = item.unitSize && item.unitSize > 0 ? item.unitSize : 1
+  return effectivePrice(item) / size
+}
+
 export function formatQty(qty: number, unit: ItemUnit | string): string {
   const decimals = unit === "kg" || unit === "l" ? 3 : 0
   return `${qty.toLocaleString(undefined, { maximumFractionDigits: decimals })} ${UNIT_LABELS[unit as ItemUnit] ?? unit}`
