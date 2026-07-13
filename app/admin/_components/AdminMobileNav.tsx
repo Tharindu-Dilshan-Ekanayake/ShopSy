@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
+import { usePathname } from "next/navigation"
 import { Menu, X, LayoutDashboard, Tag, Package, Users, ShoppingCart, Receipt } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import LogoutButton from "@/components/LogoutButton"
@@ -16,8 +17,14 @@ const navItems = [
   { href: "/counter", icon: ShoppingCart, label: "Counter" },
 ]
 
+function isActiveHref(pathname: string, href: string) {
+  if (href === "/admin") return pathname === href
+  return pathname === href || pathname.startsWith(`${href}/`)
+}
+
 export default function AdminMobileNav({ name, role }: { name: string; role: string }) {
   const [open, setOpen] = useState(false)
+  const pathname = usePathname()
 
   return (
     <>
@@ -49,17 +56,28 @@ export default function AdminMobileNav({ name, role }: { name: string; role: str
 
             {/* Nav */}
             <nav className="flex-1 p-2 space-y-0.5">
-              {navItems.map(({ href, icon: Icon, label }) => (
-                <Link
-                  key={href}
-                  href={href}
-                  onClick={() => setOpen(false)}
-                  className="flex items-center gap-2.5 px-3 py-2.5 text-sm rounded-lg text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
-                >
-                  <Icon className="size-4 shrink-0" />
-                  {label}
-                </Link>
-              ))}
+              {navItems.map(({ href, icon: Icon, label }) => {
+                const active = isActiveHref(pathname, href)
+                return (
+                  <Link
+                    key={href}
+                    href={href}
+                    onClick={() => setOpen(false)}
+                    aria-current={active ? "page" : undefined}
+                    className={`relative flex items-center gap-2.5 pl-3.5 pr-3 py-2.5 text-sm rounded-lg transition-colors ${
+                      active
+                        ? "bg-primary/10 text-primary font-semibold"
+                        : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                    }`}
+                  >
+                    {active && (
+                      <span className="absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-full bg-primary" />
+                    )}
+                    <Icon className="size-4 shrink-0" />
+                    {label}
+                  </Link>
+                )
+              })}
             </nav>
 
             {/* Footer */}

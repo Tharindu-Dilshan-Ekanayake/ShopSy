@@ -3,6 +3,7 @@
 import { useState, useCallback, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -33,6 +34,8 @@ interface Item {
 }
 
 interface CartItem extends Item { qty: number }
+
+interface Category { _id: string; name: { en: string } }
 
 interface Sale {
   billNumber: number
@@ -390,6 +393,8 @@ export default function BillScreen({
   cashierName: string
 }) {
   const [filterText, setFilterText] = useState("")
+  const [categoryFilter, setCategoryFilter] = useState("all")
+  const [categories, setCategories] = useState<Category[]>([])
   const [mobilePanelOpen, setMobilePanelOpen] = useState(false)
   const [cart, setCart] = useState<CartItem[]>([])
   const [searchQuery, setSearchQuery] = useState("")
@@ -448,9 +453,11 @@ export default function BillScreen({
 
   const removeFromCart = (id: string) => setCart((prev) => prev.filter((i) => i._id !== id))
 
-  const loadBrowse = async (p = browsePage) => {
+  const loadBrowse = async (p = browsePage, category = categoryFilter) => {
     setBrowseLoading(true)
-    const res = await fetch(`/api/items?status=active&limit=24&page=${p}&populate=0`)
+    const params = new URLSearchParams({ status: "active", limit: "24", page: String(p), populate: "0" })
+    if (category !== "all") params.set("category", category)
+    const res = await fetch(`/api/items?${params}`)
     if (res.ok) {
       const d = await res.json()
       setBrowseItems(d.items)
@@ -462,7 +469,12 @@ export default function BillScreen({
     setBrowseLoading(false)
   }
 
-  useEffect(() => { queueMicrotask(() => loadBrowse(1)) }, [])
+  // Re-runs on mount and whenever the category filter changes; always resets to page 1.
+  useEffect(() => { queueMicrotask(() => loadBrowse(1, categoryFilter)) }, [categoryFilter])
+
+  useEffect(() => {
+    fetch("/api/categories").then((r) => r.json()).then(setCategories)
+  }, [])
 
   const searchAbortRef = useRef<AbortController | null>(null)
   const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -688,13 +700,28 @@ export default function BillScreen({
       <div className="flex-1 min-w-0 overflow-hidden flex">
         {/* ── Product grid — browsable catalog, desktop only (mobile stays search+cart) ── */}
         <div className="hidden lg:flex flex-col flex-1 min-w-0 border-r overflow-hidden">
-          <div className="px-3 pt-3 pb-2">
+          <div className="px-3 pt-3 pb-2 flex gap-2">
             <Input
               value={filterText}
               onChange={(e) => setFilterText(e.target.value)}
               placeholder="Filter items..."
-              className="h-9 rounded-lg text-sm"
+              className="h-9 rounded-lg text-sm flex-1"
             />
+            <Select
+              items={[{ label: "All Categories", value: "all" }, ...categories.map((c) => ({ label: c.name.en, value: c._id }))]}
+              value={categoryFilter}
+              onValueChange={(v) => setCategoryFilter(v ?? "all")}
+            >
+              <SelectTrigger className="w-40 h-9 rounded-lg text-sm">
+                <SelectValue placeholder="All Categories" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Categories</SelectItem>
+                {categories.map((c) => (
+                  <SelectItem key={c._id} value={c._id}>{c.name.en}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <ScrollArea className="flex-1">
             {browseLoading && browseItems.length === 0 ? (
@@ -763,8 +790,23 @@ export default function BillScreen({
               </button>
             </div>
             <div className="p-2 overflow-y-auto h-full">
-              <div className="mb-2">
+              <div className="mb-2 space-y-2">
                 <Input value={filterText} onChange={(e) => setFilterText(e.target.value)} placeholder="Filter items..." className="h-9 rounded-lg text-sm" />
+                <Select
+                  items={[{ label: "All Categories", value: "all" }, ...categories.map((c) => ({ label: c.name.en, value: c._id }))]}
+                  value={categoryFilter}
+                  onValueChange={(v) => setCategoryFilter(v ?? "all")}
+                >
+                  <SelectTrigger className="w-full h-9 rounded-lg text-sm">
+                    <SelectValue placeholder="All Categories" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Categories</SelectItem>
+                    {categories.map((c) => (
+                      <SelectItem key={c._id} value={c._id}>{c.name.en}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 {filteredBrowseItems.length === 0 ? (

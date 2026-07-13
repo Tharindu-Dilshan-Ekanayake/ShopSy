@@ -54,7 +54,7 @@ export default async function AdminSalesPage({ searchParams }: PageProps) {
   await verifyAdmin()
   const sp = await (searchParams as unknown as Promise<{ page?: string; cashier?: string; from?: string; to?: string; bill?: string }>)
   const page = Math.max(1, Number(sp.page || 1))
-  const limit = 20
+  const limit = 10
   const cashierId = sp.cashier || ""
   const from = sp.from || ""
   const to = sp.to || ""

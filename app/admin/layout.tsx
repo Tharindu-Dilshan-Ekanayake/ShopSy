@@ -1,18 +1,9 @@
 import { verifyAdmin } from "@/lib/dal"
-import Link from "next/link"
-import { LayoutDashboard, Tag, Package, Users, ShoppingCart, Receipt } from "lucide-react"
 import LogoutButton from "@/components/LogoutButton"
 import NotificationBell from "@/components/NotificationBell"
 import AdminMobileNav from "./_components/AdminMobileNav"
+import AdminSidebarNav from "./_components/AdminSidebarNav"
 import BrandLogo from "../../components/BrandLogo"
-
-const navItems = [
-  { href: "/admin", icon: LayoutDashboard, label: "Dashboard" },
-  { href: "/admin/categories", icon: Tag, label: "Categories" },
-  { href: "/admin/items", icon: Package, label: "Items" },
-  { href: "/admin/sales", icon: Receipt, label: "Bill History" },
-  { href: "/admin/users", icon: Users, label: "Users" },
-]
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await verifyAdmin()
@@ -33,28 +24,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           />
         </div>
 
-        <nav className="flex-1 p-2 space-y-0.5">
-          {navItems.map(({ href, icon: Icon, label }) => (
-            <Link
-              key={href}
-              href={href}
-              className="flex items-center gap-2.5 px-3 py-2 text-sm rounded-lg text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
-            >
-              <Icon className="size-4 shrink-0" />
-              {label}
-            </Link>
-          ))}
-
-          <div className="pt-2 mt-2 border-t border-sidebar-border">
-            <Link
-              href="/counter"
-              className="flex items-center gap-2.5 px-3 py-2 text-sm rounded-lg text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
-            >
-              <ShoppingCart className="size-4 shrink-0" />
-              Counter
-            </Link>
-          </div>
-        </nav>
+        <AdminSidebarNav />
 
         <div className="p-2 border-t border-sidebar-border space-y-1">
           <div className="px-3 py-1.5">

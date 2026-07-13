@@ -66,7 +66,7 @@ export default function ItemsClient() {
 
   const load = async (p = page) => {
     setLoading(true)
-    const params = new URLSearchParams({ page: String(p), limit: "20" })
+    const params = new URLSearchParams({ page: String(p), limit: "10" })
     if (statusFilter !== "all") params.set("status", statusFilter)
     else params.set("status", "all")
     if (search) params.set("search", search)
@@ -87,7 +87,7 @@ export default function ItemsClient() {
     fetch("/api/categories").then((r) => r.json()).then(setCategories)
   }, [])
 
-  useEffect(() => { setPage(1); load(1) }, [search, catFilter, statusFilter])
+  useEffect(() => { queueMicrotask(() => { setPage(1); load(1) }) }, [search, catFilter, statusFilter])
 
   const openCreate = () => { setEditing(null); setForm(emptyForm()); setPreviewUrl(null); setDialogOpen(true) }
   const openEdit = (item: Item) => {

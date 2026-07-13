@@ -25,7 +25,7 @@ export default function DashboardCharts({ initialData }: { initialData: DataPoin
     setLoading(false)
   }
 
-  useEffect(() => { load(range) }, [range])
+  useEffect(() => { queueMicrotask(() => load(range)) }, [range])
 
   const chartData = data.map((d) => ({
     name: range === "daily" ? shortDate(d._id) : d._id,
