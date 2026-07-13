@@ -8,8 +8,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Plus, Pencil, Trash2 } from "lucide-react"
+import { Plus, Pencil, Trash2, ChevronLeft, ChevronRight } from "lucide-react"
 import { toast } from "sonner"
+
+const PAGE_SIZE = 10
 
 interface Category {
   _id: string
@@ -28,6 +30,7 @@ export default function CategoriesClient() {
   const [editing, setEditing] = useState<Category | null>(null)
   const [form, setForm] = useState({ en: "", si: "" })
   const [saving, setSaving] = useState(false)
+  const [page, setPage] = useState(1)
 
   const load = async () => {
     setLoading(true)
@@ -36,7 +39,11 @@ export default function CategoriesClient() {
     setLoading(false)
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => { queueMicrotask(() => load()) }, [])
+
+  const pages = Math.max(1, Math.ceil(categories.length / PAGE_SIZE))
+  const safePage = Math.min(page, pages)
+  const pagedCategories = categories.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE)
 
   const openCreate = () => { setEditing(null); setForm(empty); setDialogOpen(true) }
   const openEdit = (cat: Category) => { setEditing(cat); setForm({ en: cat.name.en, si: cat.name.si }); setDialogOpen(true) }
@@ -50,6 +57,7 @@ export default function CategoriesClient() {
     if (res.ok) {
       toast.success(editing ? "Category updated" : "Category created")
       setDialogOpen(false)
+      if (!editing) setPage(1)
       load()
     } else {
       const err = await res.json()
@@ -96,7 +104,7 @@ export default function CategoriesClient() {
             {!loading && categories.length === 0 && (
               <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-12">No categories yet</TableCell></TableRow>
             )}
-            {!loading && categories.map((cat) => (
+            {!loading && pagedCategories.map((cat) => (
               <TableRow key={cat._id}>
                 <TableCell className="font-medium">{cat.name.en}</TableCell>
                 <TableCell>{cat.name.si}</TableCell>
@@ -112,6 +120,21 @@ export default function CategoriesClient() {
             ))}
           </TableBody>
         </Table>
+
+        {pages > 1 && (
+          <div className="flex items-center justify-between px-4 py-3 border-t bg-muted/20">
+            <p className="text-sm text-muted-foreground">Page {safePage} of {pages}</p>
+            <div className="flex items-center gap-1">
+              <Button variant="outline" size="icon-sm" disabled={safePage <= 1} onClick={() => setPage(safePage - 1)} aria-label="Previous page">
+                <ChevronLeft className="size-4" />
+              </Button>
+              <span className="text-sm text-muted-foreground px-2">{safePage} / {pages}</span>
+              <Button variant="outline" size="icon-sm" disabled={safePage >= pages} onClick={() => setPage(safePage + 1)} aria-label="Next page">
+                <ChevronRight className="size-4" />
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Create / Edit Dialog */}

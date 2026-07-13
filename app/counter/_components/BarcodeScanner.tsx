@@ -52,7 +52,7 @@ export default function BarcodeScanner({ open, onClose, onScan }: Props) {
 
   useEffect(() => {
     if (!open) return
-    startLive()
+    queueMicrotask(() => startLive())
     return () => { stopLive() }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])

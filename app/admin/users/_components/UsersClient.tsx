@@ -35,7 +35,7 @@ export default function UsersClient() {
     setLoading(false)
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => { queueMicrotask(() => load()) }, [])
 
   const create = async () => {
     if (!form.name || !form.email || !form.password) { toast.error("All fields required"); return }
